@@ -1,11 +1,13 @@
 
 # Goal
 
-Transcibe podcasts and play them in synch with scrolling display of transcribed text
+Transcibe podcasts using python whisper api 
+
+Play them in synch with scrolling display of transcribed text reusing javascript "player" code
 
 Web based
 
-Whisper Streamlit
+Whisper
 
 # Installation
 
