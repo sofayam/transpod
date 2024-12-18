@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+  </head>
+  <body>
+    <ul>
+    {{#each pieces}}
+    <li><a href="/play/{{shortname}}">{{shortname}}</a> 
+        : {{composer}} : {{longname}}
+    </li>
+    {{/each}}
+    </ul>
+  </body>
+</html>

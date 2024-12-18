@@ -9,6 +9,23 @@ Web based
 
 Whisper
 
+
+# Run
+
+## transcribe
+
+> source setupconda.sh
+
+> source activate transpod
+
+> python transcribe <mp3file>
+
+
+
+## playpod
+
+
+
 # Installation
 
 ## Python
@@ -24,8 +41,6 @@ problems with init solved by sourcing setupconda.sh (stolen from .bash_profile)
 
 create env 
 
-just use base env
-
 > conda create --name transpod python=3.12
 > conda env list
 > source activate transpod # How the f*ck does this work?
@@ -34,6 +49,8 @@ just use base env
 
 > pip install ffmpeg
 > pip install -U openai-whisper
+
+
 
 
 # Links

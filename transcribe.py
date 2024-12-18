@@ -3,22 +3,13 @@ import whisper
 import json
 import sys
 
-# total arguments
 n = len(sys.argv)
-print("Total arguments passed:", n)
-
-# Arguments passed
-print("\nName of Python script:", sys.argv[0])
-
-print("\nArguments passed:", end = " ")
-for i in range(1, n):
-    print(sys.argv[i], end = " ")
-print(" ")
 
 if n == 1:
     print (sys.argv[0], "Usage: ")
     print ("<name(.mp3)> -> transcribes name.mp3 to name.json")
     print ("<infile(.mp3) outfile(.json)> -> transcribes infile.mp3 to outfile.json")
+    exit()
 
 infile = sys.argv[1]
 

@@ -1,4 +1,4 @@
-from streamlit_advanced_audio import audix
+from streamlit_advanced_audio import audix # type: ignore
 import streamlit as st
 
 # Basic playback
@@ -17,6 +17,6 @@ result = audix("Teppei1286.mp3", wavesurfer_options=options)
 
 # Track playback status
 if result:
-    st.write(f"Current Time: {result['currentTime']}s")
+    st.write(f"Current Time: {result['currentTime']}s") # type: ignore
     if result['selectedRegion']:
-        st.write(f"Selected Region: {result['selectedRegion']['start']} - {result['selectedRegion']['end']}s")
+        st.write(f"Selected Region: {result['selectedRegion']['start']} - {result['selectedRegion']['end']}s") # type: ignore
