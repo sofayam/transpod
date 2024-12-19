@@ -1,0 +1,56 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directory Browser</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .file {
+            cursor: pointer;
+            padding: 5px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+        }
+        .file:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Directory Browser</h1>
+    <div id="file-list"></div>
+    <script>
+        async function fetchFiles() {
+            const response = await fetch('/api/files');
+            const files = await response.json();
+
+            const fileListDiv = document.getElementById('file-list');
+            fileListDiv.innerHTML = '';
+
+            files.forEach((file) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'file';
+                fileDiv.textContent = file.name;
+
+                fileDiv.onclick = async () => {
+                    if (file.isDirectory) {
+                        alert('Directories are not selectable');
+                    } else {
+                        const fileUrl = `/api/file/${file.name}`;
+                        console.log('Selected file:', fileUrl);
+                        alert(`File selected: ${file.name}`);
+                        // You can proceed with further actions here
+                    }
+                };
+
+                fileListDiv.appendChild(fileDiv);
+            });
+        }
+
+        // Fetch files on page load
+        fetchFiles();
+    </script>
+</body>
+</html>

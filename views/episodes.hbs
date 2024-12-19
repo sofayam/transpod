@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+  </head>
+  <body>
+    <h1>Choose an episode</h1>
+    <ul>
+    {{#each eps}}
+        <li><a href="/play/{{../pod}}/{{this}}">{{this}}</a></li>
+    {{/each}}
+    </ul>
+  </body>
+</html>

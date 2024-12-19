@@ -1,0 +1,85 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directory Browser</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .file {
+            cursor: pointer;
+            padding: 5px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+        }
+        .file:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Directory Browser</h1>
+    <div id="breadcrumb"></div>
+    <div id="file-list"></div>
+    <script>
+        let currentDir = ''; // Keeps track of the current directory
+
+        async function fetchFiles() {
+            const response = await fetch(`/api/files?dir=${encodeURIComponent(currentDir)}`);
+            const files = await response.json();
+
+            const fileListDiv = document.getElementById('file-list');
+            fileListDiv.innerHTML = '';
+
+            const breadcrumbDiv = document.getElementById('breadcrumb');
+            breadcrumbDiv.innerHTML = createBreadcrumb();
+
+            files.forEach((file) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'file';
+                fileDiv.textContent = file.name;
+
+                fileDiv.onclick = async () => {
+                    if (file.isDirectory) {
+                        currentDir = pathJoin(currentDir, file.name);
+                        fetchFiles();
+                    } else {
+                        const fileUrl = `/api/file/${file.name}?dir=${encodeURIComponent(currentDir)}`;
+                        console.log('Selected file:', fileUrl);
+                        alert(`File selected: ${file.name}`);
+                        // Proceed with file
+                    }
+                };
+
+                fileListDiv.appendChild(fileDiv);
+            });
+        }
+
+        // Creates a breadcrumb for navigation
+        function createBreadcrumb() {
+            const parts = currentDir.split('/').filter(Boolean);
+            let path = '';
+            const breadcrumbs = parts.map((part, index) => {
+                path += (index === 0 ? '' : '/') + part;
+                return `<span style="cursor: pointer; text-decoration: underline;" onclick="navigateTo('${path}')">${part}</span>`;
+            });
+            return `Root / ${breadcrumbs.join(' / ')}`;
+        }
+
+        // Navigate to a specific directory via breadcrumb
+        function navigateTo(dir) {
+            currentDir = dir;
+            fetchFiles();
+        }
+
+        // Joins paths properly
+        function pathJoin(...parts) {
+            return parts.join('/').replace(/\/\/+/g, '/');
+        }
+
+        // Fetch files on page load
+        fetchFiles();
+    </script>
+</body>
+</html>
