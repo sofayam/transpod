@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Synced Transcription</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .content {
+            height: 100vh;
+            overflow-y: scroll; /* Enables scrolling */
+            padding: 20px;
+        }
+
+        .segment {
+            margin-bottom: 20px;
+        }
+
+        .highlight {
+            color: red;
+            background-color: white;
+            transition: background-color 0.5s ease; /* Smooth highlight effect */
+        }
+    </style>
+</head>
+<body>
+    <audio id="audio" controls>
+        <source src="content/Teppei1286.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <div class="content" id="transcription">
+        here is some text
+        <!-- Transcription segments -->
+        <span class="segment" data-start="0" data-end="2">Hello, this is the first segment.</span>
+        <span class="segment" data-start="2" data-end="4">This is the second segment of the transcription.</span>
+        <div class="segment" data-start="4" data-end="6">Here we have the third segment with more text.</div>
+        <div class="segment" data-start="6" data-end="8">And finally, the fourth segment wraps it up.</div>
+        and here is more
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const audio = document.getElementById("audio"); // Audio element
+            const segments = document.querySelectorAll(".segment"); // Transcription segments
+
+            // Highlight and scroll to the current segment
+            function highlightCurrentSegment() {
+                const currentTime = audio.currentTime; // Current audio playback time in seconds
+
+                segments.forEach(segment => {
+                    const start = parseFloat(segment.dataset.start);
+                    const end = parseFloat(segment.dataset.end);
+
+                    // Highlight the current segment and remove highlight from others
+                    if (currentTime >= start && currentTime < end) {
+                        segment.classList.add("highlight");
+                        segment.scrollIntoView({ behavior: "smooth", block: "center" });
+                    } else {
+                        segment.classList.remove("highlight");
+                    }
+                });
+            }
+
+            // Attach an event listener to sync text highlighting with audio playback
+            audio.addEventListener("timeupdate", highlightCurrentSegment);
+        });
+    </script>
+</body>
+</html>
