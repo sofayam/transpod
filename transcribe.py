@@ -48,7 +48,7 @@ model = whisper.load_model("base")
 result = model.transcribe(infile, word_timestamps=False)
 
 segs = result["segments"]
-
+text = result["text"]
 stripped = []
 
 for seg in segs:
@@ -59,4 +59,11 @@ for seg in segs:
 f = open(outfile, "w", encoding="utf8")
 
 json.dump(stripped, f, ensure_ascii=False, indent=4)
+
+f = open(outfile + ".txt", "w", encoding="utf8")
+
+# json.dump(result, f, ensure_ascii=False, indent=4)
+
+f.write(text)
+
 

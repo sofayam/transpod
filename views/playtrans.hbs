@@ -5,17 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Synced Transcription</title>
     <style>
+
+        #audio-container {
+            position: fixed; /* Makes the container stick to the top */
+            top: 0; /* Position it at the top of the viewport */
+            left: 0;
+            width: 100%; /* Stretch to the full width of the page */
+            background-color: #fff; /* Optional: Add a background color for clarity */
+            z-index: 1000; /* Keep it on top of other elements */
+            padding: 10px 0; /* Add some padding for better spacing */
+            border-bottom: 1px solid #ccc; /* Optional: Add a subtle border */
+        }
+
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 0;
         }
-
         .content {
-            height: 100vh;
-            overflow-y: scroll; /* Enables scrolling */
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            padding-top: 60px; /* Ensure the text doesn't overlap with the fixed player */
         }
 
         .segment {
@@ -30,10 +42,12 @@
     </style>
 </head>
 <body>
+    <div id="audio-container">
     <audio id="audio" controls>
         <source src="{{mp3file}}" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
+    </div>
 
     <div class="content" id="transcription">
 
