@@ -34,7 +34,7 @@ app.get("/pod/:id", (req, res, next) => {
     let epData = []
     contents.forEach(file => {
         console.log(file)
-        if (file !== ".DS_Store") 
+        if ((file !== ".DS_Store") && (file !== "ReadMe.md"))
             if (file.substring(file.length - 4) === ".mp3") {
                 fname = file.substring(0, file.length-4)
                 epData.push(fname)

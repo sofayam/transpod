@@ -21,8 +21,15 @@ Whisper
 > python transcribe <mp3file>
 
 
+## sync transcriptions
 
-## playpod
+use script rsyncontent to rsync to rpm17 rather than clogging up git with everything. (maybe move to another directory altogether)
+
+some fuss involved in asking extra permissions to rsync the stuff over there in the first place
+
+## run podserver
+
+node podserver.cjs
 
 
 
