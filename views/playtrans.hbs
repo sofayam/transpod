@@ -47,6 +47,7 @@
         <source src="{{mp3file}}" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
+    <input type="range" id="size-slider" min="10" max="100" value="16">
     </div>
 
     <div class="content" id="transcription">
@@ -55,10 +56,22 @@
 
     <script>
 document.addEventListener("DOMContentLoaded", () => {
+
     const audio = document.getElementById("audio");
     const transcriptionContainer = document.getElementById("transcription");
 
+    const slider = document.getElementById('size-slider');
+
+
     const whisperData = {{{transcript}}}
+
+
+    slider.addEventListener('input', () => {
+      const textSize = slider.value + 'px';
+      transcriptionContainer.style.fontSize = textSize;
+    });
+
+    transcriptionContainer.style.fontSize = slider.value + 'px';
     
    
     // Process the data into paragraphs and phrases
