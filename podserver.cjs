@@ -4,7 +4,14 @@ var path = require("path")
 
 var app = express()
 
-var port = 8014
+
+var PORT = 8014
+
+if (process.argv.length > 2) {
+    PORT = parseInt(process.argv[2])
+}
+
+BADFILES = [".gitignore", ".DS_Store", "ReadMe.md"]
 console = require("console"),
     error = console.error
 //handlebars = require('express-handlebars'),
@@ -19,7 +26,7 @@ app.get("/", (req, res, next) => {
     let pcData = []
     contents.forEach(file => {
         console.log(file)
-        if (file !== ".DS_Store") {
+        if (!(BADFILES.includes(file))){
             pcData.push(file)
         }
     })
@@ -34,7 +41,7 @@ app.get("/pod/:id", (req, res, next) => {
     let epData = []
     contents.forEach(file => {
         console.log(file)
-        if ((file !== ".DS_Store") && (file !== "ReadMe.md"))
+        if (!(BADFILES.includes(file)))
             if (file.substring(file.length - 4) === ".mp3") {
                 fname = file.substring(0, file.length-4)
                 epData.push(fname)
@@ -62,6 +69,6 @@ app.get("/play/:pod/:ep", (req, res, next) => {
 
 app.use(express.static("content"))
 
-app.listen(port, () =>
-    console.log(`Example app listening on port ${port}`)
+app.listen(PORT, () =>
+    console.log(`Example app listening on port ${PORT}`)
 )
