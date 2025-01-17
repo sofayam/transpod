@@ -44,7 +44,7 @@ app.get("/pod/:id", (req, res, next) => {
         if (!(BADFILES.includes(file)))
             if (file.substring(file.length - 4) === ".mp3") {
                 fname = file.substring(0, file.length-4)
-                epData.push(fname)
+                epData.push({displayname: fname, encoded: encodeURIComponent(fname)})
             }
     })
     res.render("episodes", { eps: epData, pod: podName })
@@ -59,7 +59,7 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     let pod = req.params.pod
     let ep = req.params.ep
     let epPath = path.join(__dirname, "content", pod, ep)
-    mp3name = "/" + pod + "/" + ep + ".mp3"
+    mp3name = "/" + pod + "/" + encodeURIComponent(ep) + ".mp3"
     transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
     transcripttext = fs.readFileSync(transcriptfile)
     console.log("epPath", epPath)
