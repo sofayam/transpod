@@ -41,11 +41,71 @@ if outfile[:-5] != ".json":
 print (f" Transcribing {infile} to {outfile}")
 
 
-model = whisper.load_model("base")
+model = whisper.load_model("medium")
+
+optionsold = {
+    "task": "transcribe",
+    "language": "en",  # or other language code
+    "fp16": False,
+    "no_speech_threshold": 0.6,
+    "word_timestamps": True,
+    "initial_prompt": None,
+    "suppress_tokens": [-1],  # Don't suppress any tokens
+    "condition_on_previous_text": True,
+    "temperature": 0,
+    "best_of": 5,
+    "without_timestamps": True,
+    "max_initial_timestamp": 1.0,
+    "patience": 1.0
+}
 
 
+optionsx = {
+    "task": "transcribe",
+    "language": "ja",  # Japanese language code
+    "fp16": False,
+    "no_speech_threshold": 0.6,
+    "word_timestamps": True,
+    "initial_prompt": "。、？！",  # Add common Japanese punctuation marks
+    "suppress_tokens": [-1],  # Don't suppress any tokens
+    "condition_on_previous_text": True,
+    "temperature": 0,
+    "best_of": 5,
+    "without_timestamps": True,
+    "max_initial_timestamp": 1.0,
+    "patience": 1.0
+}
 
-result = model.transcribe(infile, word_timestamps=False)
+optionsz = {
+    "task": "transcribe",
+    "language": "ja",  # Japanese language code
+    "fp16": False,
+    "no_speech_threshold": 0.6,
+    "word_timestamps": True,
+    "initial_prompt": "。、？！",  # Add common Japanese punctuation marks
+    "suppress_tokens": [-1],  # Don't suppress any tokens
+    "condition_on_previous_text": True,
+    "temperature": 0,
+    "best_of": 5,
+    "beam_size": 5,    # Add beam_size parameter
+    "patience": 1.0,   # Now patience will work with beam_size specified
+    # "without_timestamps": True,
+    "max_initial_timestamp": 1.0
+}
+
+options = {
+    "task": "transcribe",
+    "language": "ja",
+    "fp16": True,      # Enable half-precision for faster processing
+    "beam_size": 1,    # Reduce beam size for faster processing
+    "best_of": 1,      # Reduce candidates for faster processing
+    "temperature": 0,  # Keep deterministic output
+    "initial_prompt": "。、？！",  # Restored Japanese punctuation marks
+    "condition_on_previous_text": False,  # Disable for speed
+    "word_timestamps": False  # Disable if you don't need word-level timing
+}
+
+result = model.transcribe(infile, **options)
 
 segs = result["segments"]
 text = result["text"]
