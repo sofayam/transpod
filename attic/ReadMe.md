@@ -1,28 +1,5 @@
-# New Goals
 
-All singing all dancing podcast downloader/transcriber/player
-
-Podcast Download features
-
-- get latest (cron job)
-
-
-Transcription features
-
-- punctuation (paragraphs for extra credit)
-- diarization (currently pointless without GPU)
-
-Playback features
-
-- variable speed
-- easy to control on phone (big buttons)
-
-
-# hugging face token
-is in kypass
-
-
-# Old Goal
+# Goal
 
 Transcibe podcasts using python whisper api 
 

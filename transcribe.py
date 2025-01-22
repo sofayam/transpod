@@ -1,4 +1,7 @@
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import whisper
 import json
 import sys
@@ -96,7 +99,7 @@ optionsz = {
 options = {
     "task": "transcribe",
     "language": "ja",
-    "fp16": True,      # Enable half-precision for faster processing
+    "fp16": False,      # Enable half-precision for faster processing
     "beam_size": 1,    # Reduce beam size for faster processing
     "best_of": 1,      # Reduce candidates for faster processing
     "temperature": 0,  # Keep deterministic output

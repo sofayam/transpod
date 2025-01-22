@@ -9,12 +9,18 @@ chunk_len = 5 # minutes
 
 filename = sys.argv[1]
 
-
 # check if chunks already exist, if so terminate
-def chunkName(filename, counter):
+def chunkName(filename: str, counter: int):
     return f"{filename}chunk_{counter:02d}.mp3"
 
-if os.path.exists(chunkName(filename, 1)):
+def noChunk(filename: str):
+    dirname = os.path.dirname(filename)
+    nochunkfile = os.path.join(dirname, "nochunk.md")
+    return os.path.exists(nochunkfile)
+
+if (noChunk(filename)):
+    print(filename, " chunking disabled in this directory")
+elif os.path.exists(chunkName(filename, 1)):
     print(filename, " already chunked")
 elif "mp3chunk" in filename:
     print(filename, "is a chunk")
