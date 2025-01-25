@@ -16,7 +16,7 @@ Playback features
 
 - variable speed
 - easy to control on phone (big buttons)
-
+- show what has already been played
 
 # hugging face token
 is in kypass

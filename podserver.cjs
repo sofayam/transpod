@@ -39,15 +39,39 @@ app.get("/pod/:id", (req, res, next) => {
     console.log("epPath ", epPath) 
     let contents = fs.readdirSync(epPath)
     let epData = []
+    // find no of chunks for each file
+    let chunkdict = {}
+    let reg = /(^.*)chunk.*.mp3/
+    contents.forEach(file => {
+        let matches = reg.exec(file);
+        if (matches) {
+            stem = matches[1]
+            if (!(Object.keys(chunkdict).includes(stem))) {
+                chunkdict[stem] = 0
+            }
+            chunkdict[stem]++
+        }
+    })
     contents.forEach(file => {
         console.log(file)
         if (!(BADFILES.includes(file)))
             if (file.substring(file.length - 4) === ".mp3") {
-                fname = file.substring(0, file.length-4)
-                epData.push({displayname: fname, encoded: encodeURIComponent(fname)})
+                // filter out all the chunks from the main list
+                if (!(file.includes("chunk"))) {
+                    fname = file.substring(0, file.length - 4)
+                    var chunklist = []
+                    if (Object.keys(chunkdict).includes(file)) {
+                        for (let i = 1; i <= chunkdict[file]; i++) {
+                            chunklist.push(i.toString().padStart(2, "0"))
+                        }
+                    }
+
+                    epData.push({ displayname: fname, encoded: encodeURIComponent(fname), chunks: chunklist })
+                }
             }
     })
     res.render("episodes", { eps: epData, pod: podName })
+    console.log(chunkdict)
 })
 
 

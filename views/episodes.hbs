@@ -7,7 +7,11 @@
     <h1>Choose an episode</h1>
     <ul>
     {{#each eps}}
-        <li><a href="/play/{{../pod}}/{{encoded}}">{{displayname}}</a></li>
+        <li><a href="/play/{{../pod}}/{{encoded}}">{{displayname}}</a>
+        {{#each chunks}}
+            <a href="/play/{{../../pod}}/{{../encoded}}.mp3chunk_{{this}}">{{this}} </a>
+        {{/each}}
+        </li>
     {{/each}}
     </ul>
   </body>

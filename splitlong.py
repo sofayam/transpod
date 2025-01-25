@@ -25,7 +25,7 @@ elif os.path.exists(chunkName(filename, 1)):
 elif "mp3chunk" in filename:
     print(filename, "is a chunk")
 else:
-
+    print("Chunka chunka... ", filename)
     # Load the MP3 file
     audio = AudioSegment.from_file(filename, format="mp3")
 
@@ -46,7 +46,7 @@ else:
 
 
     for silence_start, silence_end in silences:
-        print("Found a silence at ", silence_start)
+        # print("Found a silence at ", silence_start)
         # Check if the current chunk exceeds the desired duration
         if silence_start - start_time >= chunk_duration:
             # Export the current chunk
