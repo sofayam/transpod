@@ -42,7 +42,10 @@
     </style>
 </head>
 <body>
+
+  
     <div id="audio-container">
+        <span id=podtitle></span><p></p>
     <audio id="audio" controls>
         <source src="{{mp3file}}" type="audio/mpeg">
         Your browser does not support the audio element.
@@ -56,6 +59,8 @@
 
     <script>
 document.addEventListener("DOMContentLoaded", () => {
+
+    document.getElementById("podtitle").textContent = decodeURIComponent("{{{mp3file}}}")
 
     const audio = document.getElementById("audio");
     const transcriptionContainer = document.getElementById("transcription");
