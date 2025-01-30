@@ -14,8 +14,37 @@
             background-color: #fff; /* Optional: Add a background color for clarity */
             z-index: 1000; /* Keep it on top of other elements */
             padding: 10px 0; /* Add some padding for better spacing */
-            border-bottom: 1px solid #ccc; /* Optional: Add a subtle border */
+            border-bottom: 2px solid #ddd;
+            text-align: center;
         }
+
+
+/* Large, easy-to-tap buttons */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding: 10px;
+}
+
+.controls button {
+    font-size: 18px;
+    padding: 10px 20px;
+    border: none;
+    background-color: #007BFF;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.controls button:hover {
+    background-color: #0056b3;
+}
+
+.controls button:active {
+    transform: scale(0.95);
+}
 
         body {
             font-family: Arial, sans-serif;
@@ -50,7 +79,13 @@
         <source src="{{mp3file}}" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
-    <input type="range" id="size-slider" min="10" max="100" value="16">
+        <div class="controls">
+        <button id="rewind">⏪ -5s</button>
+        <button id="play">▶ Play</button>
+        <button id="pause">⏸ Pause</button>
+        <button id="increase-font">A+</button>
+        <button id="decrease-font">A-</button>
+    </div>
     </div>
 
     <div class="content" id="transcription">
@@ -64,19 +99,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const audio = document.getElementById("audio");
     const transcriptionContainer = document.getElementById("transcription");
+        const playBtn = document.getElementById("play");
+    const pauseBtn = document.getElementById("pause");
+    const rewindBtn = document.getElementById("rewind");
+    const increaseFontBtn = document.getElementById("increase-font");
+    const decreaseFontBtn = document.getElementById("decrease-font");
 
-    const slider = document.getElementById('size-slider');
+     let fontSize = 18; // Default font size
 
 
     const whisperData = {{{transcript}}}
 
-
-    slider.addEventListener('input', () => {
-      const textSize = slider.value + 'px';
-      transcriptionContainer.style.fontSize = textSize;
-    });
-
-    transcriptionContainer.style.fontSize = slider.value + 'px';
     
    
     // Process the data into paragraphs and phrases
@@ -146,6 +179,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Attach the timeupdate event listener
     audio.addEventListener("timeupdate", highlightCurrentPhrase);
+        // Audio control buttons
+    playBtn.addEventListener("click", () => {
+        audio.play();
+    });
+
+    pauseBtn.addEventListener("click", () => {
+        audio.pause();
+    });
+
+    rewindBtn.addEventListener("click", () => {
+        audio.currentTime = Math.max(0, audio.currentTime - 5);
+    });
+        // Font size controls
+    increaseFontBtn.addEventListener("click", () => {
+        fontSize += 2;
+        transcriptionContainer.style.fontSize = `${fontSize}px`;
+    });
+
+    decreaseFontBtn.addEventListener("click", () => {
+        if (fontSize > 12) {
+            fontSize -= 2;
+            transcriptionContainer.style.fontSize = `${fontSize}px`;
+        }
+    });
 });
     </script>
 </body>
