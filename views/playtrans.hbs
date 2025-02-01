@@ -56,7 +56,7 @@
             font-family: Arial, sans-serif;
             line-height: 1.6;
             margin: 20px;
-            padding-top: 140px; /* Ensure the text doesn't overlap with the fixed player */
+            /* padding-top: 100px; /* Ensure the text doesn't overlap with the fixed player */
         }
 
         .segment {
@@ -93,7 +93,27 @@
     </div>
 
     <script>
+
+ window.onload = function () {
+    window.scrollTo(0, 0);
+};
+            
+   function adjustPadding() {
+    const audioContainer = document.getElementById("audio-container");
+    const transcriptionContainer = document.getElementById("transcription");
+    
+    // Get the exact height of the fixed controls
+    const audioHeight = audioContainer.offsetHeight;
+    
+    // Apply dynamic padding
+    transcriptionContainer.style.paddingTop = `${audioHeight + 20}px`; // Add extra spacing for safety
+}
+
+// Adjust on load and resize
+window.addEventListener("load", adjustPadding);
+window.addEventListener("resize", adjustPadding);
 document.addEventListener("DOMContentLoaded", () => {
+
 
     document.getElementById("podtitle").textContent = decodeURIComponent("{{{mp3file}}}")
 
@@ -110,8 +130,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const whisperData = {{{transcript}}}
 
-    
-   
+
+
     // Process the data into paragraphs and phrases
     function renderTranscription(data) {
         const paragraph = document.createElement("p");
