@@ -39,9 +39,13 @@ app.get("/pod/:id", (req, res, next) => {
     console.log("epPath ", epPath) 
     let contents = fs.readdirSync(epPath)
     let epData = []
+    let indexpr = None
     // find no of chunks for each file
     let chunkdict = {}
     let reg = /(^.*)chunk.*.mp3/
+    let indexprpath = path.join(epPath, "indexpr.md")
+    if path.exi
+    indexpr = open().read()
     contents.forEach(file => {
         let matches = reg.exec(file);
         if (matches) {
@@ -70,6 +74,8 @@ app.get("/pod/:id", (req, res, next) => {
                 }
             }
     })
+    if indexpr:
+
     res.render("episodes", { eps: epData, pod: podName })
     console.log(chunkdict)
 })

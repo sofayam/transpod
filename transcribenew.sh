@@ -1,4 +1,3 @@
-source setupconda.sh
 conda activate transpod
 
 for mp3 in content/**/*chunk*.mp3(.); do

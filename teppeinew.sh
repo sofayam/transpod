@@ -1,6 +1,6 @@
 conda activate transpod
 for pc in "teppeiha" "teppeinoriko" "teppei"; do
-    python getlatest.py content/$pc
+    python getpodcasts content/$pc -r 1
 done
 
 source transcribenewnochunk.sh
