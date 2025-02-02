@@ -1,10 +1,10 @@
 from pydub import AudioSegment # type: ignore
-from pydub.silence import detect_silence
+from pydub.silence import detect_silence # type: ignore
 import sys
 import os
 
 # Parameters for silence detection
-min_silence_len = 1000  # Minimum silence duration in milliseconds 
+min_silence_len = 2000  # Minimum silence duration in milliseconds 
 chunk_len = 5 # minutes
 
 filename = sys.argv[1]
@@ -46,7 +46,7 @@ else:
 
 
     for silence_start, silence_end in silences:
-        # print("Found a silence at ", silence_start)
+        print("Found a silence at ", silence_start, silence_end, silence_end - silence_start)
         # Check if the current chunk exceeds the desired duration
         if silence_start - start_time >= chunk_duration:
             # Export the current chunk
