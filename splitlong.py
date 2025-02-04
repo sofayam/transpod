@@ -2,6 +2,7 @@ from pydub import AudioSegment # type: ignore
 from pydub.silence import detect_silence # type: ignore
 import sys
 import os
+import config
 
 # Parameters for silence detection
 min_silence_len = 2000  # Minimum silence duration in milliseconds 
@@ -15,8 +16,8 @@ def chunkName(filename: str, counter: int):
 
 def noChunk(filename: str):
     dirname = os.path.dirname(filename)
-    nochunkfile = os.path.join(dirname, "nochunk.md")
-    return os.path.exists(nochunkfile)
+    nochunkset = config.getConfig(dirname)["nochunk"] == 1
+    return nochunkset
 
 if (noChunk(filename)):
     print(filename, " chunking disabled in this directory")
