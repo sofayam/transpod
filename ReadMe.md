@@ -11,12 +11,14 @@ Transcription features
 
 - punctuation (paragraphs for extra credit)
 - diarization (currently pointless without GPU)
+- use patreon transcript when available, (and avoid repeating the same with whisper)
 
 Playback features
 
 - variable speed
 - easy to control on phone (big buttons)
 - show what has already been played
+- sort by latest over all podcasts
 
 # hugging face token
 is in kypass

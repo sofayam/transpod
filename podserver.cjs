@@ -92,10 +92,13 @@ app.get("/play/:pod/:ep", (req, res, next) => {
  
 //    transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
 //    transcripttext = fs.readFileSync(transcriptfile)
-    transcripttext = getTranscript(pod, ep)
-
+    transcript = getTranscript(pod, ep)
+    transcripttext = transcript.text
+    transcriptsrc = transcript.src
     console.log("epPath", epPath)
-    res.render("playtrans", {mp3file: mp3name, transcript: transcripttext})
+    res.render("playtrans", {mp3file: mp3name, 
+        transcript: transcripttext,
+        source: transcriptsrc})
 
 })
 
@@ -128,6 +131,7 @@ const getTranscript = (pod, ep) => {
     const match = ep.match(/^#(\d+)/)
     paddedNumber = ""
     transfolder = ""
+    let source = "whisper transcript"
     foundtranscript = false
     if  (match) {
         const paddedNumber = match[1].padStart(4, '0');
@@ -143,6 +147,7 @@ const getTranscript = (pod, ep) => {
     // 2 If so convert to json and use that
     }
     if (foundtranscript) {
+        source = "patreon transcript"
         transcripttext = transhtml(path.join(transfolder, foundtranscript))
     } else {
     // 3 Else use the whisper thing from the json file
@@ -150,7 +155,7 @@ const getTranscript = (pod, ep) => {
         transcripttext = fs.readFileSync(transcriptfile)
     }
 
-    return transcripttext
+    return {src: source, text: transcripttext}
 } 
 
 const transhtml = (fname) => { 
