@@ -87,8 +87,11 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     let ep = req.params.ep
     let epPath = path.join(__dirname, "content", pod, ep)
     mp3name = "/" + pod + "/" + encodeURIComponent(ep) + ".mp3"
-    transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
-    transcripttext = fs.readFileSync(transcriptfile)
+ 
+//    transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
+//    transcripttext = fs.readFileSync(transcriptfile)
+    transcripttext = getTranscript(pod, ep)
+
     console.log("epPath", epPath)
     res.render("playtrans", {mp3file: mp3name, transcript: transcripttext})
 
@@ -99,3 +102,9 @@ app.use(express.static("content"))
 app.listen(PORT, () =>
     console.log(`Example app listening on port ${PORT}`)
 )
+
+const getTranscript = (pod, ep) => {
+    transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
+    transcripttext = fs.readFileSync(transcriptfile)
+    return transcripttext
+} 
