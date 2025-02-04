@@ -2,6 +2,7 @@ import feedparser # type: ignore
 import requests
 import os
 import argparse
+import config
 
 
 # Function to download the latest podcast
@@ -94,7 +95,7 @@ if len(offs) > 1:
 else:
     last = first
 
-feedfile = feedfolder + "/feed.md"
-rss_feed_url = open(feedfile).read()
+rss_feed_url = config.getConfig(feedfolder)["feed"]
+# rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
 download(rss_feed_url, download_folder, relative, first, last)
