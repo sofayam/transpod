@@ -1,6 +1,8 @@
 var express = require('express')
 var fs = require('fs')
 var path = require("path")
+var jsdom = require("jsdom")
+const { JSDOM } = jsdom
 
 var app = express()
 
@@ -103,8 +105,90 @@ app.listen(PORT, () =>
     console.log(`Example app listening on port ${PORT}`)
 )
 
+function findFileInDirectory(directory, searchString) {
+    try {
+        const files = fs.readdirSync(directory); // Read all files in the directory
+        const matchingFiles = files.filter(file => file.includes(searchString));
+
+        if (matchingFiles.length > 0) {
+            console.log("Found files:", matchingFiles);
+            return matchingFiles
+        } else {
+            console.log("No matching files found.");
+        }
+    } catch (error) {
+        console.error("Error reading directory:", error);
+    }
+    return []
+}
+
 const getTranscript = (pod, ep) => {
-    transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
-    transcripttext = fs.readFileSync(transcriptfile)
+    // 1 Is there an html transcript
+    //    1.1 Derive canonical index
+    const match = ep.match(/^#(\d+)/)
+    paddedNumber = ""
+    transfolder = ""
+    foundtranscript = false
+    if  (match) {
+        const paddedNumber = match[1].padStart(4, '0');
+    //    1.2 Look for file containing canonical index in transcripts folder
+        if (paddedNumber) {
+            transfolder = path.join(__dirname, "content", pod, "transcripts")
+            const res = findFileInDirectory(transfolder, paddedNumber)
+            if (res.length == 1) {
+                foundtranscript = res[0]
+                console.log("found ", foundtranscript)
+            } 
+        }
+    // 2 If so convert to json and use that
+    }
+    if (foundtranscript) {
+        transcripttext = transhtml(path.join(transfolder, foundtranscript))
+    } else {
+    // 3 Else use the whisper thing from the json file
+        transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
+        transcripttext = fs.readFileSync(transcriptfile)
+    }
+
     return transcripttext
 } 
+
+const transhtml = (fname) => { 
+    const html = fs.readFileSync(fname, 'utf8');
+
+ // Parse the HTML
+    const dom = new JSDOM(html);
+    const document = dom.window.document;
+    
+    // Extract subtitles
+    const subtitles = [];
+    document.querySelectorAll('div').forEach(div => {
+        const timestamp = div.querySelector('.timestamp');
+        const textElement = div.querySelector('.subtitle-text');
+        
+        if (timestamp && textElement) {
+            const start = parseTimestamp(timestamp.getAttribute('data-subbegin'));
+            const end = parseTimestamp(timestamp.getAttribute('data-subend'));
+            const text = textElement.textContent.trim();
+            
+            subtitles.push({ start, end, text });
+        }
+    });
+    
+    // Save as JSON
+    return JSON.stringify(subtitles, null, 4)
+
+}
+
+
+
+// Convert timestamp format "HH:MM:SS,MS" to seconds
+function parseTimestamp(timestamp) {
+    if (!timestamp) return 0;
+    const parts = timestamp.split(/[:,]/);
+    const hours = parseInt(parts[0], 10) || 0;
+    const minutes = parseInt(parts[1], 10) || 0;
+    const seconds = parseInt(parts[2], 10) || 0;
+    const milliseconds = parseInt(parts[3], 10) || 0;
+    return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+}
