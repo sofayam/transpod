@@ -35,6 +35,17 @@ app.get("/", (req, res, next) => {
     res.render("podcasts", { pods: pcData })
 })
 
+function compareEpisode (ep1, ep2) {
+    // TBD include various sorting criteria here based on data in _config.md
+    i1 = getIndex(ep1.displayname)
+    i2 = getIndex(ep2.displayname)
+    if (! (i1.match && i2.match)) {
+        return ep1.displayname.localeCompare(ep2.displayName)
+    } else {
+        return i1.index.localeCompare(i2.index)
+    }
+}
+
 app.get("/pod/:id", (req, res, next) => {
     let podName = req.params.id
     let epPath = path.join(__dirname, "content", podName)
@@ -74,6 +85,8 @@ app.get("/pod/:id", (req, res, next) => {
             }
     })
    
+    // sort episodes
+    epData.sort(compareEpisode)
 
     res.render("episodes", { eps: epData, pod: podName })
     console.log(chunkdict)
@@ -125,25 +138,36 @@ function findFileInDirectory(directory, searchString) {
     return []
 }
 
+function getIndex(title) {
+    const match = title.match(/#(\d+)/)
+    if (match) {
+        const paddedNumber = match[1].padStart(4, '0');
+        return {match: true, index: paddedNumber}
+    }
+    else
+       return {match: false, index: title}
+} 
+
 const getTranscript = (pod, ep) => {
     // 1 Is there an html transcript
     //    1.1 Derive canonical index
-    const match = ep.match(/^#(\d+)/)
+    // const match = ep.match(/^#(\d+)/)
+    const {match, index} = getIndex(ep)
     paddedNumber = ""
     transfolder = ""
     let source = "whisper transcript"
     foundtranscript = false
     if  (match) {
-        const paddedNumber = match[1].padStart(4, '0');
+
     //    1.2 Look for file containing canonical index in transcripts folder
-        if (paddedNumber) {
+
             transfolder = path.join(__dirname, "content", pod, "transcripts")
-            const res = findFileInDirectory(transfolder, paddedNumber)
+            const res = findFileInDirectory(transfolder, index)
             if (res.length == 1) {
                 foundtranscript = res[0]
                 console.log("found ", foundtranscript)
             } 
-        }
+    
     // 2 If so convert to json and use that
     }
     if (foundtranscript) {
