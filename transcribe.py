@@ -5,6 +5,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import whisper
 import json
 import sys
+import os
+import re
+import glob
 
 test=False
 
@@ -41,7 +44,7 @@ if outfile[:-5] != ".json":
 
 
 
-print (f" Transcribing {infile} to {outfile}")
+
 
 
 model = whisper.load_model("medium")
@@ -107,6 +110,34 @@ options = {
     "condition_on_previous_text": False,  # Disable for speed
     "word_timestamps": False  # Disable if you don't need word-level timing
 }
+
+# check for existence of transcipt and exit if found
+
+# get directory of file
+found = False
+dirname = os.path.dirname(infile)
+transdir = os.path.join(dirname, "transcripts")
+if os.path.exists(transdir):
+    # get index from podcast file
+    match = re.search(r'#(\d+)', infile)
+    if match: 
+        index = match.group(1).zfill(4)
+        # find file with index in transcripts
+        pattern = os.path.join(transdir, f'*{index}*')
+        print("Looking for ", pattern)
+        matches = glob.glob(pattern)
+        if matches:
+            found = True
+
+
+
+if found:
+    print("found a patreon transcript for ", infile)
+    exit()
+
+# otherwise transcribe
+
+print (f" Whisper transcribing {infile} to {outfile}")
 
 result = model.transcribe(infile, **options)
 

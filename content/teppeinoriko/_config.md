@@ -1,5 +1,6 @@
 {
   "feed" :  "https://teppeinorikojapanese.com/feed/",
-  "nochunk": 1
+  "nochunk": 1,
+  "lasttranscript": 489
 
 }
