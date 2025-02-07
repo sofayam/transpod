@@ -105,6 +105,7 @@ app.get("/play/:pod/:ep", (req, res, next) => {
  
 //    transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
 //    transcripttext = fs.readFileSync(transcriptfile)
+//  TODO apologize if no transcript is available
     transcript = getTranscript(pod, ep)
     transcripttext = transcript.text
     transcriptsrc = transcript.src

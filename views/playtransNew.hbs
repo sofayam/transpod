@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Synced Transcription</title>
+    <style>
+
+        #audio-container {
+            position: fixed; /* Makes the container stick to the top */
+            top: 0; /* Position it at the top of the viewport */
+            left: 0;
+            width: 100%; /* Stretch to the full width of the page */
+            background-color: #fff; /* Optional: Add a background color for clarity */
+            z-index: 1000; /* Keep it on top of other elements */
+            padding: 10px 0; /* Add some padding for better spacing */
+            border-bottom: 2px solid #ddd;
+            text-align: center;
+        }
+
+
+/* Large, easy-to-tap buttons */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding: 10px;
+}
+
+.controls button {
+    font-size: 18px;
+    padding: 10px 20px;
+    border: none;
+    background-color: #007BFF;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.controls button:hover {
+    background-color: #0056b3;
+}
+
+.controls button:active {
+    transform: scale(0.95);
+}
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        .content {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            /* padding-top: 100px; /* Ensure the text doesn't overlap with the fixed player */
+        }
+
+        .segment {
+            margin-bottom: 20px;
+        }
+
+        .highlight {
+            color: red;
+            background-color: white;
+            transition: background-color 0.5s ease; /* Smooth highlight effect */
+        }
+    </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleButton = document.getElementById("toggle-list-view");
+        const transcriptContainer = document.getElementById("transcript");
+
+        toggleButton.addEventListener("click", function () {
+            if (transcriptContainer.classList.contains("list-view")) {
+                transcriptContainer.classList.remove("list-view");
+            } else {
+                transcriptContainer.classList.add("list-view");
+            }
+        });
+    });
+</script>
+<style>
+    .list-view p {
+        display: block;
+        margin-bottom: 10px;
+    }
+</style>
+</head>
+<body>
+
+  
+    <div id="audio-container">
+        <span id=podtitle></span> {{source}} <p></p>
+    <audio id="audio" controls>
+        <source src="{{mp3file}}" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+        <div class="controls"><button id="toggle-list-view">Toggle List View</button>
+        <button id="rewind">⏪ -5s</button>
+        <button id="play">▶ Play</button>
+        <button id="pause">⏸ Pause</button>
+        <button id="increase-font">A+</button>
+        <button id="decrease-font">A-</button>
+    </div>
+    </div>
+
+    <div class="content" id="transcription">
+
+    </div>
+
+    <script>
+
+ window.onload = function () {
+    window.scrollTo(0, 0);
+};
+            
+   function adjustPadding() {
+    const audioContainer = document.getElementById("audio-container");
+    const transcriptionContainer = document.getElementById("transcription");
+    
+    // Get the exact height of the fixed controls
+    const audioHeight = audioContainer.offsetHeight;
+    
+    // Apply dynamic padding
+    transcriptionContainer.style.paddingTop = `${audioHeight + 20}px`; // Add extra spacing for safety
+}
+
+// Adjust on load and resize
+window.addEventListener("load", adjustPadding);
+window.addEventListener("resize", adjustPadding);
+document.addEventListener("DOMContentLoaded", () => {
+
+
+    document.getElementById("podtitle").textContent = decodeURIComponent("{{{mp3file}}}")
+
+    const audio = document.getElementById("audio");
+    const transcriptionContainer = document.getElementById("transcription");
+        const playBtn = document.getElementById("play");
+    const pauseBtn = document.getElementById("pause");
+    const rewindBtn = document.getElementById("rewind");
+    const increaseFontBtn = document.getElementById("increase-font");
+    const decreaseFontBtn = document.getElementById("decrease-font");
+
+     let fontSize = 18; // Default font size
+
+
+    const whisperData = {{{transcript}}}
+
+
+
+    // Process the data into paragraphs and phrases
+    function renderTranscription(data) {
+        const paragraph = document.createElement("p");
+
+        data.forEach(segment => {
+            const phrases = segment.text.split(/(?<=\.)|(?<=\?)|(?<=\!)/g); // Split text by punctuation
+
+            phrases.forEach(phrase => {
+                const span = document.createElement("span");
+                span.classList.add("phrase");
+                span.dataset.start = segment.start;
+                span.dataset.end = segment.end;
+                span.textContent = phrase.trim() + " ";
+                
+                span.addEventListener("click", () => {
+                    const startTime = parseFloat(span.dataset.start);
+                    audio.currentTime = startTime; // Jump to the phrase's start time
+                    audio.play(); // Resume playback
+                    span.scrollIntoView({behavior: "smooth", block: "center"})
+                });
+                paragraph.appendChild(span);
+            });
+        });
+
+        transcriptionContainer.appendChild(paragraph);
+    }
+
+    // Render the Whisper data
+    renderTranscription(whisperData);
+
+    // Highlight current phrase based on audio time
+    const phrases = document.querySelectorAll(".phrase");
+    let currentPhraseIndex = -1;
+
+    function highlightCurrentPhrase() {
+        const currentTime = audio.currentTime;
+
+        for (let i = 0; i < phrases.length; i++) {
+            const start = parseFloat(phrases[i].dataset.start);
+            const end = parseFloat(phrases[i].dataset.end);
+
+            if (currentTime >= start && currentTime < end) {
+                if (currentPhraseIndex !== i) {
+                    // Remove previous highlight
+                    if (currentPhraseIndex !== -1) {
+                        phrases[currentPhraseIndex].classList.remove("highlight");
+                    }
+
+                    // Highlight new phrase
+                    phrases[i].classList.add("highlight");
+                    phrases[i].scrollIntoView({ behavior: "smooth", block: "center" });
+
+                    currentPhraseIndex = i;
+                }
+                return;
+            }
+        }
+
+        // Remove highlight if no phrase matches
+        if (currentPhraseIndex !== -1) {
+            phrases[currentPhraseIndex].classList.remove("highlight");
+            currentPhraseIndex = -1;
+        }
+    }
+
+    // Attach the timeupdate event listener
+    audio.addEventListener("timeupdate", highlightCurrentPhrase);
+        // Audio control buttons
+    playBtn.addEventListener("click", () => {
+        audio.play();
+    });
+
+    pauseBtn.addEventListener("click", () => {
+        audio.pause();
+    });
+
+    rewindBtn.addEventListener("click", () => {
+        audio.currentTime = Math.max(0, audio.currentTime - 5);
+    });
+        // Font size controls
+    increaseFontBtn.addEventListener("click", () => {
+        fontSize += 2;
+        transcriptionContainer.style.fontSize = `${fontSize}px`;
+    });
+
+    decreaseFontBtn.addEventListener("click", () => {
+        if (fontSize > 12) {
+            fontSize -= 2;
+            transcriptionContainer.style.fontSize = `${fontSize}px`;
+        }
+    });
+});
+    </script>
+</body>
+</html>
