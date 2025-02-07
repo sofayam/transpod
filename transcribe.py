@@ -7,7 +7,7 @@ import json
 import sys
 import os
 import re
-import glob
+import config
 
 test=False
 
@@ -31,7 +31,9 @@ else:
     else:
         outfile = sys.argv[2]
 
-
+match = re.search(r'chunk', infile)
+if match:
+    print(infile, " is a chunk, will not be transcribed")
 
 if infile[-4:] != ".mp3":
     infile += ".mp3"
@@ -41,13 +43,6 @@ if outfile[-4:] == ".mp3":
 
 if outfile[:-5] != ".json":
     outfile += ".json"
-
-
-
-
-
-
-model = whisper.load_model("medium")
 
 optionsold = {
     "task": "transcribe",
@@ -114,30 +109,23 @@ options = {
 # check for existence of transcipt and exit if found
 
 # get directory of file
-found = False
+
 dirname = os.path.dirname(infile)
-transdir = os.path.join(dirname, "transcripts")
-if os.path.exists(transdir):
-    # get index from podcast file
-    match = re.search(r'#(\d+)', infile)
-    if match: 
-        index = match.group(1).zfill(4)
-        # find file with index in transcripts
-        pattern = os.path.join(transdir, f'*{index}*')
-        print("Looking for ", pattern)
-        matches = glob.glob(pattern)
-        if matches:
-            found = True
-
-
-
-if found:
-    print("found a patreon transcript for ", infile)
-    exit()
+conf = config.getConfig(dirname)
+match = re.search(r'#(\d+)', infile)
+if match:
+    index = int(match.group(1))
+    if "lasttranscript" in conf:
+        maxtrans = conf["lasttranscript"]
+        if maxtrans:
+            if index <= maxtrans:
+                print("found a patreon transcript for ", infile)
+                exit()
 
 # otherwise transcribe
 
 print (f" Whisper transcribing {infile} to {outfile}")
+model = whisper.load_model("medium")
 
 result = model.transcribe(infile, **options)
 

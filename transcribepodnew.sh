@@ -1,7 +1,7 @@
 #!/bin/zsh
 conda activate transpod
 
-for mp3 in content/**/*.mp3(.); do
+for mp3 in content/$1/*.mp3(.); do
   
   json=${mp3%.mp3}.json
   if [[ ! -f $json ]]; then
