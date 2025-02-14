@@ -39,11 +39,8 @@ function compareEpisode (ep1, ep2) {
     // TBD include various sorting criteria here based on data in _config.md
     i1 = getIndex(ep1.displayname)
     i2 = getIndex(ep2.displayname)
-    if (! (i1.match && i2.match)) {
-        return ep1.displayname.localeCompare(ep2.displayName)
-    } else {
-        return i1.index.localeCompare(i2.index)
-    }
+    return i1.index.localeCompare(i2.index)
+
 }
 
 app.get("/pod/:id", (req, res, next) => {
