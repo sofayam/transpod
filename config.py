@@ -1,9 +1,14 @@
 import json
+import os
 
 def getConfig(feedfolder: str):
-    configStr: str = open(feedfolder + "/_config.md").read()
-    config = json.loads(configStr)
-    return config
+    configPath = feedfolder + "/_config.md"
+    if os.path.exists(configPath):
+        configStr: str = open(configPath).read()
+        config = json.loads(configStr)
+        return config
+    else:
+        return {}
 
 if __name__ == "__main__":
     ff = "./content/teppei"
