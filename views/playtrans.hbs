@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Synced Transcription</title>
+    <title>Should not be seen</title>
     <style>
 
         #audio-container {
@@ -114,8 +114,9 @@ window.addEventListener("load", adjustPadding);
 window.addEventListener("resize", adjustPadding);
 document.addEventListener("DOMContentLoaded", () => {
 
-
-    document.getElementById("podtitle").textContent = decodeURIComponent("{{{mp3file}}}")
+    const decodedTitle = decodeURIComponent("{{{mp3file}}}") 
+    document.getElementById("podtitle").textContent = decodedTitle
+    document.title = decodedTitle
 
     const audio = document.getElementById("audio");
     const transcriptionContainer = document.getElementById("transcription");
