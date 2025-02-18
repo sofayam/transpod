@@ -99,7 +99,7 @@ app.get("/pod/:id", (req, res, next) => {
     // sort episodes
     epData.sort(compareEpisode)
 
-    res.render("episodes", { eps: epData, pod: podName })
+    res.render("episodes", { eps: epData, pod: podName, layout: false })
     console.log(chunkdict)
 })
 
@@ -123,7 +123,7 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     console.log("epPath", epPath)
     res.render("playtrans", {mp3file: mp3name, 
         transcript: transcripttext,
-        source: transcriptsrc})
+        source: transcriptsrc, layout: false})
 
 })
 

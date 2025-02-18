@@ -3,7 +3,7 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <style>
-     body {
+body {
     font-family: Arial, sans-serif;
     margin: 20px;
     padding: 0;
@@ -31,29 +31,38 @@ h1 {
 
 .table-header, .table-row {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     padding: 12px;
     border-bottom: 1px solid #ddd;
+    flex-wrap: nowrap; /* 🚀 Force everything to stay in one row */
+    gap: 10px; /* Adds spacing between items */
 }
 
 .table-header {
     background: #007bff;
     color: white;
     font-weight: bold;
-    text-align: left;
 }
 
 .col {
     flex: 1;
-    padding: 5px;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* Make sure the folder name gets priority space */
 .folder-name {
-    font-weight: bold;
+    flex: 2;
 }
 
+/* Ensure dropdowns shrink but stay usable */
 select {
-    width: 100%;
+    flex: 1;
+    min-width: 110px; /* Prevents dropdowns from getting too tiny */
+    max-width: 150px; /* Stops dropdowns from taking up too much space */
     padding: 6px;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -62,21 +71,21 @@ select {
 }
 
 /* Responsive Design */
-@media (max-width: 600px) {
+@media (max-width: 480px) {
     .table-header, .table-row {
-        flex-direction: column;
-        text-align: center;
+        flex-wrap: nowrap; /* 🚀 Ensures everything stays in one row */
     }
 
-    .col {
-        padding: 8px;
+    .folder-name {
+        flex: 2; /* Allow it to take more space */
     }
 
     select {
-        width: 80%;
-        margin: 0 auto;
+        flex: 1;
+        min-width: 80px;
     }
 }
+
     </style>
   </head>
   <body>
@@ -85,17 +94,17 @@ select {
     <div class="table">
         {{#each pods}}
         <div class="table-row">
-            <div class="col folder-name">{{this.name}}</div>
+            <div class="col folder-name"><a href="/pod/{{this.name}}">{{this.name}}</a></div>
             <div class="col">
                 <select class="order" data-folder="{{this.name}}">
-                    <option value="oldest" {{#if (eq this.order "older")}}selected{{/if}}>Ascending</option>
-                    <option value="latest" {{#if (eq this.order "latest")}}selected{{/if}}>Descending</option>
+                    <option value="oldest" {{#if (eq this.order "oldest")}}selected{{/if}}>oldest</option>
+                    <option value="latest" {{#if (eq this.order "latest")}}selected{{/if}}>latest</option>
                 </select>
             </div>
             <div class="col">
                 <select class="show" data-folder="{{this.name}}">
-                    <option value="all" {{#if (eq this.show "all")}}selected{{/if}}>All</option>
-                    <option value="unfinished" {{#if (eq this.show "unfinished")}}selected{{/if}}>Unplaid</option>
+                    <option value="all" {{#if (eq this.show "all")}}selected{{/if}}>all</option>
+                    <option value="unfinished" {{#if (eq this.show "unfinished")}}selected{{/if}}>unfinished</option>
                 </select>
             </div>
         </div>
