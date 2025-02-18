@@ -99,6 +99,12 @@ app.get("/pod/:id", (req, res, next) => {
     // sort episodes
     epData.sort(compareEpisode)
 
+    // reverse order if dropdown set to latest
+    const meta = readMetaPod(podName)
+    if (meta.order === "latest") {
+        epData.reverse()
+    }
+
     res.render("episodes", { eps: epData, pod: podName, layout: false })
     console.log(chunkdict)
 })
