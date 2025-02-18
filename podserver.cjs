@@ -19,20 +19,34 @@ console = require("console"),
 //handlebars = require('express-handlebars'),
     path = require('path');
 
+const exphbs = require('express-handlebars');
+const hbs = exphbs.create({
+    extname: 'hbs',
+    helpers: {
+        eq: (a, b) => a === b
+    }
+});
+app.engine('hbs', hbs.engine);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 
+app.use(express.json())
+
 app.get("/", (req, res, next) => {
     let podPath = path.join(__dirname, "content")
-    let contents = fs.readdirSync(podPath)
+    let contents = fs.readdirSync(podPath, {withFileTypes: true})
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name)
     let pcData = []
     contents.forEach(file => {
         console.log(file)
         if (!(BADFILES.includes(file))){
-            pcData.push(file)
+            let meta = readMetaPod(file)
+            podEntry = {name: file, ...meta}
+            pcData.push(podEntry)
         }
     })
-    res.render("podcasts", { pods: pcData })
+    res.render("podcasts", { pods: pcData, layout: false})
 })
 
 function compareEpisode (ep1, ep2) {
@@ -112,6 +126,47 @@ app.get("/play/:pod/:ep", (req, res, next) => {
         source: transcriptsrc})
 
 })
+
+
+function readMetaPod(folderName) {
+    const metaPath = path.join(__dirname, "content", `${folderName}.meta`);
+    if (fs.existsSync(metaPath)) {
+        try {
+            return JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+        } catch (error) {
+            console.error(`Error reading ${metaPath}:`, error);
+        }
+    }
+    return { order: "latest", show: "all" }; // Default values
+}
+
+/**
+ * Writes metadata as JSON for a given directory.
+ */
+function writeMetaPod(folderName, order, show) {
+    const metaPath = path.join(__dirname, "content", `${folderName}.meta`);
+    const metaData = { order, show };
+    
+    try {
+        fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');
+        console.log(`Updated meta file: ${metaPath}`);
+    } catch (error) {
+        console.error(`Error writing ${metaPath}:`, error);
+    }
+}
+
+app.post('/update-meta-pod', (req, res) => {
+    console.log("BODY>", req.body)
+    const { name, order, show } = req.body;
+    const folderPath = path.join(__dirname, "content", name);
+
+    if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+        writeMetaPod(name, order, show);
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ success: false, message: "Invalid folder" });
+    }
+});
 
 app.use(express.static("content"))
 
