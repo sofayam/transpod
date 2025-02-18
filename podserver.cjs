@@ -119,6 +119,7 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     let ep = req.params.ep
     let epPath = path.join(__dirname, "content", pod, ep)
     mp3name = "/" + pod + "/" + encodeURIComponent(ep) + ".mp3"
+    meta = readMetaEp(pod, ep)
  
 //    transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
 //    transcripttext = fs.readFileSync(transcriptfile)
@@ -126,12 +127,25 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     transcript = getTranscript(pod, ep)
     transcripttext = transcript.text
     transcriptsrc = transcript.src
-    console.log("epPath", epPath)
+    console.log("epPath", epPath,   "meta",  meta)
     res.render("playtrans", {mp3file: mp3name, 
         transcript: transcripttext,
-        source: transcriptsrc, layout: false})
+        source: transcriptsrc, meta, layout: false})
 
 })
+
+
+function readMetaEp(pod, ep)  {
+    const metaPath = path.join(__dirname, "content", pod, ep + ".meta")
+    if (fs.existsSync(metaPath)) {
+        try {
+            return JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+        } catch (error) {
+            console.error(`Error reading ${metaPath}:`, error);
+        }
+    }
+    return { finished: false, timeLastOpened: null, timeInPod: 0}; // Default values
+}
 
 
 function readMetaPod(folderName) {
@@ -146,9 +160,13 @@ function readMetaPod(folderName) {
     return { order: "latest", show: "all" }; // Default values
 }
 
-/**
- * Writes metadata as JSON for a given directory.
- */
+function writeMetaEp(metaPath, finished, timeLastOpened, timeInPod){
+    const metaData = {finished, timeLastOpened, timeInPod}
+    fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8')
+    console.log(`Updated meta file: ${metaPath}`);
+}
+
+
 function writeMetaPod(folderName, order, show) {
     const metaPath = path.join(__dirname, "content", `${folderName}.meta`);
     const metaData = { order, show };
@@ -161,6 +179,27 @@ function writeMetaPod(folderName, order, show) {
     }
 }
 
+
+
+app.post('/update-meta-ep', (req, res) => {
+    console.log("BODY>", req.body)
+    const { name, finished, timeLastOpened, timeInPod } = req.body;
+    path.parse(na)
+    // TBD cut off mp3 and change to meta
+    // TBD maybe some URL decoding needed here
+    const podcastpath = name.slice(0,-4)
+    const metapath = path.join(__dirname, "content", podcastpath + ".meta")
+    try {
+         writeMetaEp(metapath, finished, timeLastOpened, timeInPod)
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error(`Error writing ${metapath}`, error)
+        res.status(400).json({  success: false, message: "Invalid Episode"});
+    }
+
+});
+
 app.post('/update-meta-pod', (req, res) => {
     console.log("BODY>", req.body)
     const { name, order, show } = req.body;
@@ -170,7 +209,7 @@ app.post('/update-meta-pod', (req, res) => {
         writeMetaPod(name, order, show);
         res.json({ success: true });
     } else {
-        res.status(400).json({ success: false, message: "Invalid folder" });
+        res.status(400).json({ success: false, message: "Invalid Podcast" });
     }
 });
 
