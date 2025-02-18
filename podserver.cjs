@@ -128,7 +128,7 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     transcripttext = transcript.text
     transcriptsrc = transcript.src
     console.log("epPath", epPath,   "meta",  meta)
-    res.render("playtrans", {mp3file: mp3name, 
+    res.render("playtrans", {pod, mp3file: mp3name, 
         transcript: transcripttext,
         source: transcriptsrc, meta, layout: false})
 
@@ -185,8 +185,9 @@ app.post('/update-meta-ep', (req, res) => {
     console.log("BODY>", req.body)
     const { name, finished, timeLastOpened, timeInPod } = req.body;
     // TBD cut off mp3 and change to meta
-    // TBD maybe some URL decoding needed here
-    const podcastpath = name.slice(0,-4)
+    // TBD maybe some URL ding needed here
+    const deconame = decodeURIComponent(name)
+    const podcastpath = deconame.slice(0,-4)
     const metapath = path.join(__dirname, "content", podcastpath + ".meta")
     try {
          writeMetaEp(metapath, finished, timeLastOpened, timeInPod)

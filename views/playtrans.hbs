@@ -74,21 +74,22 @@
 
   
     <div id="audio-container">
-        {{meta.finished}}
-        <p></p>
         <span id=podtitle></span> {{source}} <p></p>
+             <button id="increase-font">A+</button>
     <audio id="audio" controls>
         <source src="{{mp3file}}" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
+    
+            <button id="decrease-font">A-</button>
         <div class="controls">
+        <button id="back">D</button>      
         <button id="rewind">⏪ -5s</button>
-        <button id="play">▶ Play</button>
-        <button id="pause">⏸ Pause</button>
-        <button id="increase-font">A+</button>
-        <button id="decrease-font">A-</button>
+        <button id="play">▶</button>
+        <button id="pause">⏸</button>
+
         <button id="finished">F</button>
-        <button id="mark">M</button>
+
     </div>
     </div>
 
@@ -118,8 +119,8 @@ window.addEventListener("load", adjustPadding);
 window.addEventListener("resize", adjustPadding);
 document.addEventListener("DOMContentLoaded", () => {
 
-    let timeInPod = {{meta.timeInPod}}
-    let timeLastOpened = {{meta.timeLastOpened}}
+
+    let timeLastOpened = new Date()
     let finished = {{meta.finished}}
 
     const decodedTitle = decodeURIComponent("{{{mp3file}}}") 
@@ -127,14 +128,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.title = decodedTitle
 
     const audio = document.getElementById("audio");
+    audio.currentTime = {{meta.timeInPod}}
     const transcriptionContainer = document.getElementById("transcription");
-        const playBtn = document.getElementById("play");
+    const backBtn = document.getElementById("back");
+    const playBtn = document.getElementById("play");
     const pauseBtn = document.getElementById("pause");
     const rewindBtn = document.getElementById("rewind");
     const increaseFontBtn = document.getElementById("increase-font");
     const decreaseFontBtn = document.getElementById("decrease-font");
     const finishBtn = document.getElementById("finished");
-    const markBtn = document.getElementById("mark");
 
      let fontSize = 18; // Default font size
 
@@ -211,6 +213,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Attach the timeupdate event listener
     audio.addEventListener("timeupdate", highlightCurrentPhrase);
         // Audio control buttons
+
+    backBtn.addEventListener("click", () => {
+        saveMeta()
+        setTimeout(function() {
+               window.location.href="/pod/{{pod}}"
+        }, 1000);
+
+    })
     playBtn.addEventListener("click", () => {
         audio.play();
     });
@@ -221,6 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     pauseBtn.addEventListener("click", () => {
+        saveMeta();
         audio.pause();
     });
 
@@ -239,8 +250,13 @@ document.addEventListener("DOMContentLoaded", () => {
             transcriptionContainer.style.fontSize = `${fontSize}px`;
         }
     });
+
+    window.onbeforeunload = function() {
+        saveMeta()
+    }
+
     function saveMeta() {
-        let meta = {finished, timeLastOpened, timeInPod}
+        let meta = {finished, timeLastOpened, timeInPod: audio.currentTime}
         fetch("/update-meta-ep", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
