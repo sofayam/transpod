@@ -95,12 +95,19 @@ app.get("/pod/:id", (req, res, next) => {
                 }
             }
     })
-   
+
+    const meta = readMetaPod(podName)
+    // if we only want unfinished
+    if(meta.show === "unfinished") {
+        epData = epData.filter((item) => isUnfinished(podName, item.displayname))
+    }
+    // throw out the finished episodes 
+
     // sort episodes
     epData.sort(compareEpisode)
 
     // reverse order if dropdown set to latest
-    const meta = readMetaPod(podName)
+  
     if (meta.order === "latest") {
         epData.reverse()
     }
@@ -110,7 +117,12 @@ app.get("/pod/:id", (req, res, next) => {
 })
 
 
+function isUnfinished(podName, epName) {
+    meta = readMetaEp(podName, epName)
+    console.log("isunfinished: ",  meta)
+    return ! meta.finished 
 
+}
 
 
 
@@ -134,6 +146,17 @@ app.get("/play/:pod/:ep", (req, res, next) => {
 
 })
 
+app.get("/recentListen", (req, res) => {
+    // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
+    let epList = []
+    res.render("recentListen", {epList, layout: false})
+})
+
+app.get("/recentPublish", (req, res) => {
+    // TBD get data from podcast feed ? when ?
+    let epList = []
+    res.render("recentPublish", {epList, layout: false})
+})
 
 function readMetaEp(pod, ep)  {
     const metaPath = path.join(__dirname, "content", pod, ep + ".meta")
