@@ -74,6 +74,8 @@
 
   
     <div id="audio-container">
+        {{meta.finished}}
+        <p></p>
         <span id=podtitle></span> {{source}} <p></p>
     <audio id="audio" controls>
         <source src="{{mp3file}}" type="audio/mpeg">
@@ -85,6 +87,8 @@
         <button id="pause">⏸ Pause</button>
         <button id="increase-font">A+</button>
         <button id="decrease-font">A-</button>
+        <button id="finished">F</button>
+        <button id="mark">M</button>
     </div>
     </div>
 
@@ -114,6 +118,10 @@ window.addEventListener("load", adjustPadding);
 window.addEventListener("resize", adjustPadding);
 document.addEventListener("DOMContentLoaded", () => {
 
+    let timeInPod = {{meta.timeInPod}}
+    let timeLastOpened = {{meta.timeLastOpened}}
+    let finished = {{meta.finished}}
+
     const decodedTitle = decodeURIComponent("{{{mp3file}}}") 
     document.getElementById("podtitle").textContent = decodedTitle
     document.title = decodedTitle
@@ -125,6 +133,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const rewindBtn = document.getElementById("rewind");
     const increaseFontBtn = document.getElementById("increase-font");
     const decreaseFontBtn = document.getElementById("decrease-font");
+    const finishBtn = document.getElementById("finished");
+    const markBtn = document.getElementById("mark");
 
      let fontSize = 18; // Default font size
 
@@ -205,6 +215,11 @@ document.addEventListener("DOMContentLoaded", () => {
         audio.play();
     });
 
+    finishBtn.addEventListener("click", () => {
+        finished = true
+        saveMeta()
+    })
+
     pauseBtn.addEventListener("click", () => {
         audio.pause();
     });
@@ -224,6 +239,24 @@ document.addEventListener("DOMContentLoaded", () => {
             transcriptionContainer.style.fontSize = `${fontSize}px`;
         }
     });
+    function saveMeta() {
+        let meta = {finished, timeLastOpened, timeInPod}
+        fetch("/update-meta-ep", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({name: "{{mp3file}}",   ...meta})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(`Error: ${data.message}`);
+                } else {
+                    console.log(`Updated meta for ${name}`);
+                }
+            })
+            .catch(error => console.error("Fetch error:", error));
+       
+    }
 });
     </script>
 </body>

@@ -144,7 +144,7 @@ function readMetaEp(pod, ep)  {
             console.error(`Error reading ${metaPath}:`, error);
         }
     }
-    return { finished: false, timeLastOpened: null, timeInPod: 0}; // Default values
+    return { finished: false, timeLastOpened: 0, timeInPod: 0}; // Default values
 }
 
 
@@ -184,7 +184,6 @@ function writeMetaPod(folderName, order, show) {
 app.post('/update-meta-ep', (req, res) => {
     console.log("BODY>", req.body)
     const { name, finished, timeLastOpened, timeInPod } = req.body;
-    path.parse(na)
     // TBD cut off mp3 and change to meta
     // TBD maybe some URL decoding needed here
     const podcastpath = name.slice(0,-4)
