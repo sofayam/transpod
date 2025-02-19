@@ -70,6 +70,29 @@ select {
     cursor: pointer;
 }
 
+/* Styling for the links section */
+.link-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Button-like styling for links */
+.styled-link {
+    display: inline-block;
+    padding: 10px 15px;
+    margin: 5px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.styled-link:hover {
+    background-color: #0056b3;
+}
+
 /* Responsive Design */
 @media (max-width: 480px) {
     .table-header, .table-row {
@@ -83,6 +106,12 @@ select {
     select {
         flex: 1;
         min-width: 80px;
+    }
+
+    .styled-link {
+        display: block;
+        width: 80%;
+        margin: 5px auto;
     }
 }
 
@@ -112,9 +141,10 @@ select {
     </div>
 
 </div>
-
-<a href="/recentListen">Recent listening</a>
-<a href="/recentPublish">Recently Published</a>
+<div class="link-container">
+    <a href="/recentListen" class="styled-link">Recent listening</a>
+    <a href="/recentPublish" class="styled-link">Recently Published</a>
+</div>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
