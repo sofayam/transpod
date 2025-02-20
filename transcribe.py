@@ -8,6 +8,7 @@ import sys
 import os
 import re
 import config
+import os.path
 
 test=False
 
@@ -107,6 +108,10 @@ options = {
 }
 
 # check for existence of transcipt and exit if found
+
+if os.path.exists(outfile):
+    print("transcript already exists for", infile)
+    exit()
 
 # get directory of file
 
