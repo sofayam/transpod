@@ -119,7 +119,7 @@ app.get("/pod/:id", (req, res, next) => {
 
 function isUnfinished(podName, epName) {
     meta = readMetaEp(podName, epName)
-    console.log("isunfinished: ",  meta)
+    // console.log("isunfinished: ",  meta)
     return ! meta.finished 
 
 }
