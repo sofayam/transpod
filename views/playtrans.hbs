@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.title = decodedTitle
 
     const audio = document.getElementById("audio");
-    audio.currentTime = {{meta.timeInPod}}
+
     const transcriptionContainer = document.getElementById("transcription");
     const backBtn = document.getElementById("back");
     const playBtn = document.getElementById("play");
@@ -213,13 +213,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Attach the timeupdate event listener
     audio.addEventListener("timeupdate", highlightCurrentPhrase);
         // Audio control buttons
+    function setStartTime() {
+        audio.currentTime = {{meta.timeInPod}}
+    }
+    audio.addEventListener("canplaythrough", setStartTime)
 
     backBtn.addEventListener("click", () => {
-        saveMeta()
-        setTimeout(function() {
-               window.location.href="/pod/{{pod}}"
-        }, 1000);
-
+        saveMeta(true)
     })
     playBtn.addEventListener("click", () => {
         audio.play();
@@ -227,7 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     finishBtn.addEventListener("click", () => {
         finished = true
-        saveMeta()
+        saveMeta(true)
     })
 
     pauseBtn.addEventListener("click", () => {
@@ -255,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
         saveMeta()
     }
 
-    function saveMeta() {
+    function saveMeta(andLeave = false) {
         let meta = {finished, timeLastOpened, timeInPod: audio.currentTime}
         fetch("/update-meta-ep", {
                 method: "POST",
@@ -268,6 +268,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     alert(`Error: ${data.message}`);
                 } else {
                     console.log(`Updated meta for ${name}`);
+                }
+                if (andLeave) {
+                    window.location.href="/pod/{{pod}}"
                 }
             })
             .catch(error => console.error("Fetch error:", error));
