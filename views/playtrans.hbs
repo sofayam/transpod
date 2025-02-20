@@ -68,6 +68,7 @@
             background-color: white;
             transition: background-color 0.5s ease; /* Smooth highlight effect */
         }
+            input[type="range"] { width: 80%; }
     </style>
 </head>
 <body>
@@ -76,6 +77,9 @@
     <div id="audio-container">
         <span id=podtitle></span> {{source}} <p></p>
              <button id="increase-font">A+</button>
+             <p>
+                <input type="range" id="seekSlider" min="0" value="0" step="0.1" disabled>
+             </p>
     <audio id="audio" controls>
         <source src="{{mp3file}}" type="audio/mpeg">
         Your browser does not support the audio element.
@@ -128,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const audio = document.getElementById("audio");
     audio.controls = false
-
+    let seekSlider = document.getElementById("seekSlider");
     const transcriptionContainer = document.getElementById("transcription");
     const backBtn = document.getElementById("back");
     const playpauseBtn = document.getElementById("playpause");
@@ -163,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 span.addEventListener("click", () => {
                     const startTime = parseFloat(span.dataset.start);
                     audio.currentTime = startTime; // Jump to the segments's start time
-                    audio.play(); // Resume playback
+                    // audio.play(); // Resume playback
                     span.scrollIntoView({behavior: "smooth", block: "center"})})
             
                 paragraph.appendChild(span);
@@ -215,12 +219,21 @@ document.addEventListener("DOMContentLoaded", () => {
     audio.addEventListener("timeupdate", function() {
                 updateTimeDisplay();
                 highlightCurrentPhrase();
+
     })
 
         // Audio control buttons
     function setStartTime() {
         audio.currentTime = {{meta.timeInPod}}
+        seekSlider.max = audio.duration;
+        seekSlider.disabled = false;
     }
+
+    seekSlider.addEventListener("input", function() {
+        audio.currentTime = seekSlider.value;
+        // updateHighlight();
+    });
+
     audio.addEventListener("canplaythrough", setStartTime)
 
     backBtn.addEventListener("click", () => {
@@ -235,8 +248,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateTimeDisplay() {
             let current = formatTime(audio.currentTime);
             let total = formatTime(audio.duration);
+            seekSlider.value = audio.currentTime;
             timeDisplay.textContent = `${current} / ${total}`;
     }
+
     playpauseBtn.addEventListener("click", () => {
         if (pptoggle) {
             audio.play();
