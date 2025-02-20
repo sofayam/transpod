@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Sync with Whisper Transcript</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #transcript { max-width: 600px; margin: 20px auto; text-align: left; }
+        .segment { padding: 5px; }
+        .highlight { background-color: yellow; font-weight: bold; }
+        #controls { margin: 20px; }
+        input[type="range"] { width: 80%; }
+    </style>
+</head>
+<body>
+
+    <h2>Upload MP3 and Transcript</h2>
+    <input type="file" id="audioFile" accept="audio/mp3"><br><br>
+    <input type="file" id="transcriptFile" accept="application/json"><br><br>
+    
+    <div id="controls">
+        <button id="playPauseBtn" disabled>Play</button><br><br>
+        <input type="range" id="seekSlider" min="0" value="0" step="0.1" disabled>
+        <div id="timeDisplay">0:00 / 0:00</div>
+    </div>
+
+    <h3>Transcript</h3>
+    <div id="transcript"></div>
+
+    <script>
+        let audio = new Audio();
+        let transcript = [];
+        let transcriptContainer = document.getElementById("transcript");
+        let playPauseBtn = document.getElementById("playPauseBtn");
+        let seekSlider = document.getElementById("seekSlider");
+        let timeDisplay = document.getElementById("timeDisplay");
+
+        document.getElementById("audioFile").addEventListener("change", function(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let url = URL.createObjectURL(file);
+                audio.src = url;
+                audio.addEventListener("loadedmetadata", () => {
+                    seekSlider.max = audio.duration;
+                    seekSlider.disabled = false;
+                    playPauseBtn.disabled = false;
+                    updateTimeDisplay();
+                });
+            }
+        });
+
+        document.getElementById("transcriptFile").addEventListener("change", function(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    transcript = JSON.parse(e.target.result);
+                    displayTranscript();
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function displayTranscript() {
+            transcriptContainer.innerHTML = "";
+            transcript.forEach((segment, index) => {
+                let span = document.createElement("span");
+                span.textContent = segment.text + " ";
+                span.classList.add("segment");
+                span.dataset.index = index;
+                transcriptContainer.appendChild(span);
+            });
+        }
+
+        playPauseBtn.addEventListener("click", function() {
+            if (audio.paused) {
+                audio.play();
+                playPauseBtn.textContent = "Pause";
+                requestAnimationFrame(updateHighlight);
+            } else {
+                audio.pause();
+                playPauseBtn.textContent = "Play";
+            }
+        });
+
+        seekSlider.addEventListener("input", function() {
+            audio.currentTime = seekSlider.value;
+            updateHighlight();
+        });
+
+        audio.addEventListener("timeupdate", function() {
+            seekSlider.value = audio.currentTime;
+            updateTimeDisplay();
+        });
+
+        function updateTimeDisplay() {
+            let current = formatTime(audio.currentTime);
+            let total = formatTime(audio.duration);
+            timeDisplay.textContent = `${current} / ${total}`;
+        }
+
+        function formatTime(seconds) {
+            let min = Math.floor(seconds / 60);
+            let sec = Math.floor(seconds % 60);
+            return `${min}:${sec.toString().padStart(2, "0")}`;
+        }
+
+        function updateHighlight() {
+            let currentTime = audio.currentTime;
+
+            transcript.forEach((segment, index) => {
+                let span = document.querySelector(`[data-index='${index}']`);
+                if (currentTime >= segment.start && currentTime <= segment.end) {
+                    span.classList.add("highlight");
+                } else {
+                    span.classList.remove("highlight");
+                }
+            });
+
+            if (!audio.paused) {
+                requestAnimationFrame(updateHighlight);
+            }
+        }
+    </script>
+
+</body>
+</html>
