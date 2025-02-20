@@ -2,11 +2,13 @@ FROM node:alpine
 
 WORKDIR /app
 
-COPY podserver.cjs .
-COPY views views
+
 COPY package.json .
 
 RUN npm install
+
+COPY podserver.cjs .
+COPY views views
 
 EXPOSE 8014
 
