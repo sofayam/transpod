@@ -278,6 +278,8 @@ const getTranscript = (pod, ep) => {
     transfolder = ""
     let source = "whisper transcript"
     foundtranscript = false
+    transcripttext = ""
+
     if  (match) {
 
     //    1.2 Look for file containing canonical index in transcripts folder
@@ -297,7 +299,12 @@ const getTranscript = (pod, ep) => {
     } else {
     // 3 Else use the whisper thing from the json file
         transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
+        try {
         transcripttext = fs.readFileSync(transcriptfile)
+        } catch(error) {
+            console.log("no transcript found, defaulting to polite apology")
+            transcripttext = '[{ "start": 0.0, "end": 10000.0, "text": "申し訳ありませんが、このエピソードのトランスクリプトはまだ利用できません。"}]'
+        }
     }
 
     return {src: source, text: transcripttext}
