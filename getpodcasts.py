@@ -3,10 +3,11 @@ import requests
 import os
 import argparse
 import config
+import json
 
 
 # Function to download the latest podcast
-def download(rss_feed_url, download_folder, relative, first, last):
+def download(rss_feed_url, download_folder, relative, first, last, savefeed):
     # Parse the RSS feed
     feed = feedparser.parse(rss_feed_url)
 
@@ -16,6 +17,10 @@ def download(rss_feed_url, download_folder, relative, first, last):
         return
     else:
         print(len(feed.entries), " Entries in total")
+        if savefeed:
+            latestfeedpath = open(download_folder + ".latestfeed", "w", encoding='utf8')
+            json.dump(feed.entries, latestfeedpath, ensure_ascii=False, indent=4)
+
     # Get the latest episode
 
     if relative:
@@ -95,7 +100,9 @@ if len(offs) > 1:
 else:
     last = first
 
-rss_feed_url = config.getConfig(feedfolder)["feed"]
+conf = config.getConfig(feedfolder)
+rss_feed_url = conf["feed"]
+savefeed =  "savefeed" in list(conf.keys())
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
-download(rss_feed_url, download_folder, relative, first, last)
+download(rss_feed_url, download_folder, relative, first, last, savefeed)
