@@ -71,7 +71,8 @@ function makeFeedOrderDict(feed) {
     let dict = {}
     let index = 1
     feed.forEach(ep => {
-        dict[ep.title] = index;
+        let cleanEp = ep.title.replace(/ /g, "_").replace(/\//g, "_") 
+        dict[cleanEp] = index;
         index++
     })
     return dict
@@ -89,6 +90,7 @@ app.get("/pod/:id", (req, res, next) => {
 
     let latestfeedPath = path.join(__dirname, "content", podName + ".latestfeed") 
     if (fs.existsSync(latestfeedPath)) {
+        console.log("latestfeed exists")
         let latestFeed = JSON.parse(fs.readFileSync(latestfeedPath))
         feedOrderDict = makeFeedOrderDict(latestFeed)
     } else {
