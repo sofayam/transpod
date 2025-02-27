@@ -126,14 +126,14 @@ select {
             <div class="col folder-name"><a href="/pod/{{this.name}}">{{this.name}}</a></div>
             <div class="col">
                 <select class="order" data-folder="{{this.name}}">
-                    <option value="oldest" {{#if (eq this.order "oldest")}}selected{{/if}}>oldest</option>
-                    <option value="latest" {{#if (eq this.order "latest")}}selected{{/if}}>latest</option>
+                    <option value="oldest" {{#if (eq this.order "oldest")}}selected{{/if}}>⏳↓</option>
+                    <option value="latest" {{#if (eq this.order "latest")}}selected{{/if}}>⌛↑</option>
                 </select>
             </div>
             <div class="col">
                 <select class="show" data-folder="{{this.name}}">
-                    <option value="all" {{#if (eq this.show "all")}}selected{{/if}}>all</option>
-                    <option value="unfinished" {{#if (eq this.show "unfinished")}}selected{{/if}}>unfinished</option>
+                    <option value="all" {{#if (eq this.show "all")}}selected{{/if}}>🔴+✅</option>
+                    <option value="unfinished" {{#if (eq this.show "unfinished")}}selected{{/if}}>🔴</option>
                 </select>
             </div>
         </div>
