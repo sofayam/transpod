@@ -8,6 +8,7 @@ var app = express()
 
 
 var PORT = 8014
+var orderList = null
 
 if (process.argv.length > 2) {
     PORT = parseInt(process.argv[2])
@@ -112,6 +113,8 @@ app.get("/pod/:id", (req, res, next) => {
         epData.reverse()
     }
 
+    orderList = epData
+
     res.render("episodes", { eps: epData, pod: podName, layout: false })
     console.log(chunkdict)
 })
@@ -124,7 +127,23 @@ function isUnfinished(podName, epName) {
 
 }
 
-
+function getNextep(ep) {
+    if (!orderList)
+        return  
+    let epData = orderList
+    let found = false
+    let nextep = ""
+    epData.forEach(item => {
+        if (found) {
+            nextep = item.displayname
+            found = false
+        }
+        if (item.displayname === ep) {
+            found = true
+        }
+    })
+    return nextep
+}
 
 app.get("/play/:pod/:ep", (req, res, next) => {
     let pod = req.params.pod
@@ -139,10 +158,11 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     transcript = getTranscript(pod, ep)
     transcripttext = transcript.text
     transcriptsrc = transcript.src
+    nextep =  encodeURIComponent(getNextep(ep))
     console.log("epPath", epPath,   "meta",  meta)
     res.render("playtrans", {pod, mp3file: mp3name, 
         transcript: transcripttext,
-        source: transcriptsrc, meta, layout: false})
+        source: transcriptsrc, meta, nextep, layout: false})
 
 })
 
@@ -276,7 +296,7 @@ const getTranscript = (pod, ep) => {
     const {match, index} = getIndex(ep)
     paddedNumber = ""
     transfolder = ""
-    let source = "whisper transcript"
+    let source = "whisper"
     foundtranscript = false
     transcripttext = ""
 
@@ -294,7 +314,7 @@ const getTranscript = (pod, ep) => {
     // 2 If so convert to json and use that
     }
     if (foundtranscript) {
-        source = "patreon transcript"
+        source = "patreon"
         transcripttext = transhtml(path.join(transfolder, foundtranscript))
     } else {
     // 3 Else use the whisper thing from the json file

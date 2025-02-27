@@ -87,9 +87,11 @@
 
 
     <div id="audio-container">
-        <span id=podtitle></span> {{source}} <p></p>
+        <span id=podtitle></span> [{{source}}] <a href="/pod/{{pod}}">(Back)</a><p></p>
          
-
+        <p>
+            
+        </p>
         <p>
             <input type="range" id="seekSlider" min="0" value="0" step="0.1" disabled>
         </p>
@@ -101,7 +103,7 @@
 
       <div class="controls">
    
-            <button id="back">D</button>
+            <button id="next">N</button>
             <button id="rewind">⏪ -5s</button>
             <button id="playpause">▶</button>
             <button id="finished">F</button>
@@ -151,7 +153,7 @@
         audio.controls = false
         let seekSlider = document.getElementById("seekSlider");
         const transcriptionContainer = document.getElementById("transcription");
-        const backBtn = document.getElementById("back");
+        const nextBtn = document.getElementById("next");
         const playpauseBtn = document.getElementById("playpause");
         // const pauseBtn = document.getElementById("pause");
         const rewindBtn = document.getElementById("rewind");
@@ -254,7 +256,7 @@
 
         audio.addEventListener("canplaythrough", setStartTime)
 
-        backBtn.addEventListener("click", () => {
+        nextBtn.addEventListener("click", () => {
             saveMeta(true)
         })
 
@@ -307,7 +309,7 @@
             saveMeta()
         }
 
-        function saveMeta(andLeave = false) {
+        function saveMeta(andNext = false) {
             let meta = { finished, timeLastOpened, timeInPod: audio.currentTime }
             fetch("/update-meta-ep", {
                 method: "POST",
@@ -321,8 +323,8 @@
                     } else {
                         console.log(`Updated meta for ${name}`);
                     }
-                    if (andLeave) {
-                        window.location.href = "/pod/{{pod}}"
+                    if (andNext) {
+                        window.location.href = "/play/{{pod}}/{{{nextep}}}"
                     }
                 })
                 .catch(error => console.error("Fetch error:", error));

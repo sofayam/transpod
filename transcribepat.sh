@@ -20,6 +20,6 @@ fi
 
 # Process the matched files
 for file in "${files[@]}"; do
-  python transcribefast.py $file
+  time python transcribefast.py $file
 done
 
