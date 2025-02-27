@@ -92,7 +92,7 @@ app.get("/pod/:id", (req, res, next) => {
                         }
                     }
 
-                    epData.push({ displayname: fname, encoded: encodeURIComponent(fname), chunks: chunklist })
+                    epData.push({ displayname: fname, encoded: encodeURIComponent(fname), finished: !(isUnfinished(podName, fname)), chunks: chunklist })
                 }
             }
     })

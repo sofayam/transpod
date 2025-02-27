@@ -61,9 +61,15 @@
     <h1>Choose an episode of {{pod}}</h1>
     <ul>
     {{#each eps}}
-        <li><a href="/play/{{../pod}}/{{encoded}}">{{displayname}}</a>
+        <div><li><a href="/play/{{../pod}}/{{encoded}}">   {{#if finished}}
+                    ✅
+                {{else}}
+                    🔴
+                {{/if}}
+                  {{displayname}} </a>
+                </div>
         {{#each chunks}}
-            <a href="/play/{{../../pod}}/{{../encoded}}.mp3chunk_{{this}}">{{this}} </a>
+            <a href="/play/{{../../pod}}/{{../encoded}}.mp3chunk_{{this}}">{{this}} </a> 
         {{/each}}
         </li>
     {{/each}}
