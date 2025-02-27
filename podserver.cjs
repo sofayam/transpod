@@ -9,6 +9,7 @@ var app = express()
 
 var PORT = 8014
 var orderList = null
+var feedOrderDict = null
 
 if (process.argv.length > 2) {
     PORT = parseInt(process.argv[2])
@@ -21,6 +22,7 @@ console = require("console"),
     path = require('path');
 
 const exphbs = require('express-handlebars');
+const { getDefaultAutoSelectFamilyAttemptTimeout } = require('net')
 const hbs = exphbs.create({
     extname: 'hbs',
     helpers: {
@@ -51,11 +53,28 @@ app.get("/", (req, res, next) => {
 })
 
 function compareEpisode (ep1, ep2) {
+    if (feedOrderDict) {
+        i1 = feedOrderDict[ep1.displayname]
+        i2 = feedOrderDict[ep2.displayname]
+        return i1 - i2
+    } else {
+    
     // TBD include various sorting criteria here based on data in _config.md
     i1 = getIndex(ep1.displayname)
     i2 = getIndex(ep2.displayname)
     return i1.index.localeCompare(i2.index)
+    }
 
+}
+
+function makeFeedOrderDict(feed) {
+    let dict = {}
+    let index = 1
+    feed.forEach(ep => {
+        dict[ep.title] = index;
+        index++
+    })
+    return dict
 }
 
 app.get("/pod/:id", (req, res, next) => {
@@ -67,6 +86,14 @@ app.get("/pod/:id", (req, res, next) => {
     // find no of chunks for each file
     let chunkdict = {}
     let reg = /(^.*)chunk.*.mp3/
+
+    let latestfeedPath = path.join(__dirname, "content", podName + ".latestfeed") 
+    if (fs.existsSync(latestfeedPath)) {
+        let latestFeed = JSON.parse(fs.readFileSync(latestfeedPath))
+        feedOrderDict = makeFeedOrderDict(latestFeed)
+    } else {
+        feedOrderDict = null
+    }
   
     contents.forEach(file => {
         let matches = reg.exec(file);
@@ -92,7 +119,7 @@ app.get("/pod/:id", (req, res, next) => {
                         }
                     }
 
-                    epData.push({ displayname: fname, encoded: encodeURIComponent(fname), finished: !(isUnfinished(podName, fname)), chunks: chunklist })
+                    epData.push({ podName, displayname: fname, encoded: encodeURIComponent(fname), finished: !(isUnfinished(podName, fname)), chunks: chunklist })
                 }
             }
     })
