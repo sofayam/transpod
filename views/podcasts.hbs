@@ -147,6 +147,13 @@ select {
 </div>
 
 <script>
+
+window.addEventListener("load", function() {
+    const lastPage = localStorage.getItem("lastPage");
+    if (lastPage) {
+        window.location.href = lastPage;
+    }
+}); 
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("select").forEach(select => {
         select.addEventListener("change", function () {

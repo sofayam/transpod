@@ -87,7 +87,7 @@
 
 
     <div id="audio-container">
-        <span id=podtitle></span> [{{source}}] <a href="/pod/{{pod}}">↩️</a><p></p>
+        <span id=podtitle></span> [{{source}}]  <button id="back">↩️</button> 
          
         <p>
             
@@ -121,6 +121,7 @@
 
         window.onload = function () {
             window.scrollTo(0, 0);
+            localStorage.setItem("lastPage", window.location.href);
         };
 
         function adjustPadding() {
@@ -154,6 +155,7 @@
         let seekSlider = document.getElementById("seekSlider");
         const transcriptionContainer = document.getElementById("transcription");
         const nextBtn = document.getElementById("next");
+        const backBtn = document.getElementById("back");
         const playpauseBtn = document.getElementById("playpause");
         // const pauseBtn = document.getElementById("pause");
         const rewindBtn = document.getElementById("rewind");
@@ -288,6 +290,13 @@
             finished = true
             saveMeta(true)
         })
+
+
+        backBtn.addEventListener("click", () => {
+            saveMeta()
+            localStorage.setItem("lastPage", "")
+            window.location.href = "/pod/{{pod}}"
+        });
 
         rewindBtn.addEventListener("click", () => {
             audio.currentTime = Math.max(0, audio.currentTime - 5);
