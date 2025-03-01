@@ -122,6 +122,7 @@
         window.onload = function () {
             window.scrollTo(0, 0);
             localStorage.setItem("lastPage", window.location.href);
+
         };
 
         function adjustPadding() {
@@ -164,12 +165,22 @@
         const finishBtn = document.getElementById("finished");
         const timeDisplay = document.getElementById("timeDisplay")
 
-        let fontSize = 20; // Default font size
+
+        fontSize = localStorage.getItem("fontSize") || 20;
+        setFontSize(fontSize)
+
+
+        // let fontSize = 20; // Default font size
 
 
         const whisperData = {{{ transcript }}}
 
+    
 
+        function setFontSize(fontSize) {
+             transcriptionContainer.style.fontSize = `${fontSize}px`;
+             localStorage.setItem("fontSize", fontSize)
+        }
 
         // Process the data into paragraphs and phrases
         function renderTranscription(data) {
@@ -304,13 +315,13 @@
         // Font size controls
         increaseFontBtn.addEventListener("click", () => {
             fontSize += 2;
-            transcriptionContainer.style.fontSize = `${fontSize}px`;
+             setFontSize(fontSize)
         });
 
         decreaseFontBtn.addEventListener("click", () => {
             if (fontSize > 12) {
                 fontSize -= 2;
-                transcriptionContainer.style.fontSize = `${fontSize}px`;
+                setFontSize(fontSize)
             }
         });
 
