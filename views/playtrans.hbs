@@ -119,6 +119,10 @@
 
     <script>
 
+        const FONTMAX = 40;
+        const FONTMIN = 12;
+
+
         window.onload = function () {
             window.scrollTo(0, 0);
             localStorage.setItem("lastPage", window.location.href);
@@ -167,17 +171,22 @@
 
 
         fontSize = localStorage.getItem("fontSize") || 20;
-        setFontSize(fontSize)
+        setFontSize()
 
 
-        // let fontSize = 20; // Default font size
+    
 
 
         const whisperData = {{{ transcript }}}
 
     
 
-        function setFontSize(fontSize) {
+        function setFontSize() {
+            if (fontSize < FONTMIN) {
+                fontSize = FONTMIN
+            } else if (fontSize > FONTMAX) {
+                fontSize = FONTMAX
+            }
              transcriptionContainer.style.fontSize = `${fontSize}px`;
              localStorage.setItem("fontSize", fontSize)
         }
@@ -314,17 +323,17 @@
         });
         // Font size controls
         increaseFontBtn.addEventListener("click", () => {
-          if  (fontSize < 40) {
+        
             fontSize += 2;
-             setFontSize(fontSize)
-          }
+             setFontSize()
+      
         });
 
         decreaseFontBtn.addEventListener("click", () => {
-            if (fontSize > 12) {
+          
                 fontSize -= 2;
-                setFontSize(fontSize)
-            }
+                setFontSize()
+            
         });
 
         window.onbeforeunload = function () {
