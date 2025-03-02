@@ -314,8 +314,10 @@
         });
         // Font size controls
         increaseFontBtn.addEventListener("click", () => {
+          if  (fontSize < 40) {
             fontSize += 2;
              setFontSize(fontSize)
+          }
         });
 
         decreaseFontBtn.addEventListener("click", () => {
