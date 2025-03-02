@@ -80,6 +80,8 @@
         input[type="range"] {
             width: 80%;
         }
+        
+
     </style>
 </head>
 
@@ -87,12 +89,9 @@
 
 
     <div id="audio-container">
-        <span id=podtitle></span> [{{source}}]  <button id="back">↩️</button> 
-         
+        <span id=podtitle></span> [{{source}}]  <button id="back">↩️</button>
         <p>
-            
-        </p>
-        <p>
+      
             <input type="range" id="seekSlider" min="0" value="0" step="0.1" disabled>
         </p>
         <audio id="audio" controls>
@@ -168,6 +167,7 @@
         const decreaseFontBtn = document.getElementById("decrease-font");
         const finishBtn = document.getElementById("finished");
         const timeDisplay = document.getElementById("timeDisplay")
+      
 
 
         fontSize = localStorage.getItem("fontSize") || 20;
@@ -275,6 +275,23 @@
             audio.currentTime = seekSlider.value;
             // updateHighlight();
         });
+
+      
+  function logMessage(message) {
+    console.log(message);
+    transcriptionContainer.insertAdjacentHTML("afterbegin", `<p>${message}</p>`);
+}
+audio.addEventListener("progress", () => {
+    if (audio.buffered.length > 0) {
+        const end = audio.buffered.end(0);
+        if (end >= audio.duration) {
+    
+                playpauseBtn.style.backgroundColor = "green";
+            // alert("MP3 has fully downloaded.");
+        }
+    }
+});
+
 
         audio.addEventListener("canplaythrough", setStartTime)
 
