@@ -1,7 +1,7 @@
 import json
 import os
 
-def getConfig(feedfolder: str):
+def getConfig(feedfolder: str) -> dict[str, str|int]:
     configPath = feedfolder + "/_config.md"
     if os.path.exists(configPath):
         configStr: str = open(configPath).read()

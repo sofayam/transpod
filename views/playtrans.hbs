@@ -168,18 +168,10 @@
         const finishBtn = document.getElementById("finished");
         const timeDisplay = document.getElementById("timeDisplay")
       
-
-
         fontSize = localStorage.getItem("fontSize") || 20;
         setFontSize()
 
-
-    
-
-
-        const whisperData = {{{ transcript }}}
-
-    
+        const whisperData = {{{ transcript }}}    
 
         function setFontSize() {
             if (fontSize < FONTMIN) {
@@ -196,8 +188,6 @@
             const paragraph = document.createElement("p");
 
             data.forEach(segment => {
-
-
 
                 const span = document.createElement("span");
                 span.classList.add("phrase");
@@ -356,6 +346,11 @@ audio.addEventListener("progress", () => {
         window.onbeforeunload = function () {
             saveMeta()
         }
+
+        setInterval(() => {
+            if (! (audio.paused))
+                saveMeta()
+        }, 15000);
 
         function saveMeta(andNext = false) {
             let meta = { finished, timeLastOpened, timeInPod: audio.currentTime }

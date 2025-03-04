@@ -1,22 +1,27 @@
-import feedparser # type: ignore
+# import feedparser # type: ignore
+from feedparser import parse, FeedParserDict
 import requests
 import os
 import argparse
 import config
 import json
+import sys
+from transcribefast import transcribe
 
 
 # Function to download the latest podcast
-def download(rss_feed_url, download_folder, relative, first, last, savefeed):
+def download(rss_feed_url, download_folder, relative, first, last, savefeed, transcribeAsWell, sync):
     # Parse the RSS feed
-    feed = feedparser.parse(rss_feed_url)
+
+    podcatch = False
+    feed = parse(rss_feed_url)
 
     # Check if the feed has entries
     if not feed.entries:
-        print("No episodes found in the RSS feed.")
+        print("No episodes found in the RSS feed.", file=sys.stderr)
         return
     else:
-        print(len(feed.entries), " Entries in total")
+        print(len(feed.entries), " Entries in total", file=sys.stderr)
         if savefeed:
             latestfeedpath = open(download_folder + ".latestfeed", "w", encoding='utf8')
             json.dump(feed.entries, latestfeedpath, ensure_ascii=False, indent=4)
@@ -44,19 +49,33 @@ def download(rss_feed_url, download_folder, relative, first, last, savefeed):
 
         # check if file already exists
         if os.path.exists(file_path):
-            print(file_path, "already downloaded")
+            print(file_path, "already downloaded", file=sys.stderr)
         else:
             # Download the episode
-            print(f"Downloading: {episode_title}")
+            print(f"Downloading: {episode_title}", file=sys.stderr)
             response = requests.get(media_url, stream=True)
 
             if response.status_code == 200:
                 with open(file_path, "wb") as file:
                     for chunk in response.iter_content(chunk_size=1024):
                         file.write(chunk)
-                print(f"Downloaded: {file_path}")
+                print(file_path)
+                if transcribe:
+                    if transcribeAsWell:
+                        transcribe(file_path)
+                        if sync:
+                            podcatch = True
+                            print ("Marked for syncing to NAS")
+                    else:
+                        print("Downloaded but did NOT transcribe", file_path)
+               
             else:
-                print(f"Failed to download the episode. HTTP Status Code: {response.status_code}")
+                print(f"Failed to download the episode. HTTP Status Code: {response.status_code}", file=sys.stderr)
+    if podcatch:
+        print("syncing to NAS")
+        command = "rsync --exclude='*.meta' -avz --progress " + download_folder + "/ mark@rpm17.local:/volume1/data/languages/japanese/podcasts/" + download_folder
+        print(command)  
+        os.system(command)
 
 # Example usage
 
@@ -75,6 +94,10 @@ def parse_args():
     # "absolute" option: takes 1 or 2 int numbers
     group.add_argument("-a", "--absolute", nargs="+", type=int, help="Absolute mode: provide 1 or 2 integers.")
 
+    parser.add_argument("-t", "--transcribe", help="Run transcribe on the downloaded files", action="store_true")
+
+    parser.add_argument("-s", "--sync", help="sync to NAS with rsync", action="store_true")
+    
     args = parser.parse_args()
 
     # Validate the number of arguments (only 1 or 2 numbers allowed)
@@ -105,4 +128,4 @@ rss_feed_url = conf["feed"]
 savefeed =  "savefeed" in list(conf.keys())
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
-download(rss_feed_url, download_folder, relative, first, last, savefeed)
+download(rss_feed_url, download_folder, relative, first, last, savefeed, getattr(args,"transcribe"), getattr(args,"sync"))
