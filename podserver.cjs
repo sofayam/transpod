@@ -43,7 +43,7 @@ app.get("/", (req, res, next) => {
     .map(dirent => dirent.name)
     let pcData = []
     contents.forEach(file => {
-        console.log(file)
+        // console.log(file)
         if (!(BADFILES.includes(file))){
             let meta = readMetaPod(file)
             podEntry = {name: file, ...meta}
@@ -82,7 +82,7 @@ function makeFeedOrderDict(feed) {
 app.get("/pod/:id", (req, res, next) => {
     let podName = req.params.id
     let epPath = path.join(__dirname, "content", podName)
-    console.log("epPath ", epPath) 
+    // console.log("epPath ", epPath) 
     let contents = fs.readdirSync(epPath)
     let epData = []
     // find no of chunks for each file
@@ -91,7 +91,7 @@ app.get("/pod/:id", (req, res, next) => {
 
     let latestfeedPath = path.join(__dirname, "content", podName + ".latestfeed") 
     if (fs.existsSync(latestfeedPath)) {
-        console.log("latestfeed exists")
+        // console.log("latestfeed exists")
         let latestFeed = JSON.parse(fs.readFileSync(latestfeedPath))
         feedOrderDict = makeFeedOrderDict(latestFeed)
     } else {
@@ -109,7 +109,7 @@ app.get("/pod/:id", (req, res, next) => {
         }
     })
     contents.forEach(file => {
-        console.log(file)
+        // console.log(file)
         if (!(BADFILES.includes(file)))
             if (file.substring(file.length - 4) === ".mp3") {
                 // filter out all the chunks from the main list
@@ -146,7 +146,6 @@ app.get("/pod/:id", (req, res, next) => {
     orderList = epData
 
     res.render("episodes", { eps: epData, pod: podName, layout: false })
-    console.log(chunkdict)
 })
 
 
@@ -266,7 +265,7 @@ function readMetaPod(folderName) {
 function writeMetaEp(metaPath, finished, timeLastOpened, timeInPod){
     const metaData = {finished, timeLastOpened, timeInPod}
     fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8')
-    console.log(`Updated meta file: ${metaPath}`);
+    console.log(`Updated meta ep file: ${metaPath}`);
 }
 
 
@@ -276,7 +275,7 @@ function writeMetaPod(folderName, order, show) {
     
     try {
         fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');
-        console.log(`Updated meta file: ${metaPath}`);
+        console.log(`Updated meta pod file: ${metaPath}`);
     } catch (error) {
         console.error(`Error writing ${metaPath}:`, error);
     }
@@ -331,7 +330,7 @@ function findFileInDirectory(directory, searchString) {
          
             return matchingFiles
         } else {
-            console.log("No matching files found.");
+            console.error("No matching files found.");
         }
     } catch (error) {
         console.error("Error reading directory:", error);
