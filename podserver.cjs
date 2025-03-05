@@ -195,9 +195,53 @@ app.get("/play/:pod/:ep", (req, res, next) => {
 })
 
 app.get("/recentPublish", (req, res) => {
-      // TBD get data from podcast feed ? when ?
+   
     
-    let epList = []
+    function comparePublishedParsed(a, b) {
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) {
+                return a[i] - b[i];
+            }
+        }
+        return 0;
+    }
+
+          // Get all podcast info, sort on published_parsed field
+          let podPath = path.join(__dirname, "content")
+
+          let contents = fs.readdirSync(podPath, {withFileTypes: true})
+          .filter(dirent => dirent.isDirectory())
+          .map(dirent => dirent.name)
+          // for each podcast
+          let epList = []
+          contents.forEach(podName => {
+      
+              if (!(BADFILES.includes(podName))) {
+                  let ppath = path.join(podPath, podName)
+            
+                  let eps = fs.readdirSync(ppath, { withFileTypes: true })
+                              .filter(dirent => dirent.isFile() && dirent.name.endsWith('.info'))
+                              .map(dirent => dirent.name);
+                  eps.forEach(ep => {
+              
+                      let infopath = path.join(ppath, ep)
+           
+                      let info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
+           
+                      let barename = ep.slice(0, -5) 
+                      let epentry = {pod: podName, name: barename, encoded: encodeURIComponent(barename), info}
+                      epList.push(epentry)
+                  })
+              }
+          })
+          
+    
+    // Sort the data array based on the published_parsed field
+    epList.sort((a, b) => comparePublishedParsed(b.info.published_parsed, a.info.published_parsed))
+
+    // take the first 100
+    epList = epList.slice(0, 100)
+
     res.render("recentPublish", {epList, layout: false})
 })
 
@@ -233,6 +277,9 @@ app.get("/recentListen", (req, res) => {
     })
     epList = epList.filter(ep => ep.meta.timeLastOpened !== 0)
     epList.sort((a, b) => b.meta.timeLastOpened.localeCompare(a.meta.timeLastOpened))
+
+    // take the first 100
+    epList = epList.slice(0, 100)
 
     res.render("recentListen", {epList, layout: false})
 })

@@ -43,31 +43,35 @@ def download(rss_feed_url, download_folder, relative, first, last, savefeed, tra
         # Ensure the download folder exists
         os.makedirs(download_folder, exist_ok=True)
 
-        # File path for the downloaded episode
-        file_name = episode_title.replace(" ", "_").replace("/", "_") + ".mp3"
-        file_path = os.path.join(download_folder, file_name)
+        file_base = episode_title.replace(" ", "_").replace("/", "_") 
+        mp3name = file_base + ".mp3"
+        infoname = file_base + ".info"
+
+        mp3path = os.path.join(download_folder, mp3name)
+        infopath = os.path.join(download_folder, infoname)
 
         # check if file already exists
-        if os.path.exists(file_path):
-            print(file_path, "already downloaded", file=sys.stderr)
+        if os.path.exists(mp3path):
+            print(mp3path, "already downloaded", file=sys.stderr)
         else:
             # Download the episode
             print(f"Downloading: {episode_title}", file=sys.stderr)
             response = requests.get(media_url, stream=True)
 
             if response.status_code == 200:
-                with open(file_path, "wb") as file:
+                with open(mp3path, "wb") as file:
                     for chunk in response.iter_content(chunk_size=1024):
                         file.write(chunk)
-                print(file_path)
+                print(mp3path)
+                json.dump(latest_episode, open(infopath, "w", encoding='utf8'), ensure_ascii=False, indent=4)
                 if transcribe:
                     if transcribeAsWell:
-                        transcribe(file_path)
+                        transcribe(mp3path)
                         if sync:
                             podcatch = True
                             print ("Marked for syncing to NAS")
                     else:
-                        print("Downloaded but did NOT transcribe", file_path)
+                        print("Downloaded but did NOT transcribe", mp3path)
                
             else:
                 print(f"Failed to download the episode. HTTP Status Code: {response.status_code}", file=sys.stderr)

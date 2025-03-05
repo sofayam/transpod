@@ -1,5 +1,54 @@
 <html>
+    <head>
+        <style>
+            body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e9ecef;
+            margin: 0;
+            padding: 0;
+            }
+            h1 {
+            background-color: #6c757d;
+            color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            margin: 0;
+            border-bottom: 4px solid #343a40;
+            }
+            ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 20px;
+            }
+            li {
+            background-color: #ffffff;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+            }
+            li:hover {
+            background-color: #f1f3f5;
+            }
+            a {
+            text-decoration: none;
+            color: #495057;
+            font-weight: bold;
+            }
+            a:hover {
+            color: #17a2b8;
+            }
+        </style>
+    </head>
     <body>
-        <h1>Coming Soon</h1>
+        <h1>Recently Published</h1>
+        <ul>
+        {{#each epList}}
+            <li>
+                {{this.info.published}} <a href="/play/{{this.pod}}/{{this.encoded}}">  {{this.pod}}: {{this.name}}</a>
+            </li>
+        {{/each}}
+        </ul>
     </body>
 </html>

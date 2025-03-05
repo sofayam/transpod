@@ -1,5 +1,6 @@
 */*.mp3
 */*.json
+*/*.info
 */*.json.txt
 */transcripts
 *.meta
