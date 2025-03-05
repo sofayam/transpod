@@ -1,5 +1,49 @@
 <html>
+    <head>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 0;
+            }
+            h1 {
+                background-color: #333;
+                color: #fff;
+                padding: 20px;
+                text-align: center;
+                margin: 0;
+            }
+            ul {
+                list-style-type: none;
+                padding: 0;
+                margin: 20px;
+            }
+            li {
+                background-color: #fff;
+                margin: 10px 0;
+                padding: 15px;
+                border-radius: 5px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            a {
+                text-decoration: none;
+                color: #333;
+                font-weight: bold;
+            }
+            a:hover {
+                color: #007BFF;
+            }
+        </style>
+    </head>
     <body>
-        <h1>Coming Soon</h1>
+        <h1>Recent Listening Activity</h1>
+        <ul>
+        {{#each epList}}
+            <li>
+                {{this.meta.timeLastOpened}} <a href="/play/{{this.pod}}/{{this.encoded}}">  {{this.pod}}: {{this.name}}</a>
+            </li>
+        {{/each}}
+        </ul>
     </body>
 </html>

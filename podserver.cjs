@@ -23,6 +23,7 @@ console = require("console"),
 
 const exphbs = require('express-handlebars');
 const { getDefaultAutoSelectFamilyAttemptTimeout } = require('net')
+const { default: e } = require('express')
 const hbs = exphbs.create({
     extname: 'hbs',
     helpers: {
@@ -151,7 +152,6 @@ app.get("/pod/:id", (req, res, next) => {
 
 function isUnfinished(podName, epName) {
     meta = readMetaEp(podName, epName)
-    // console.log("isunfinished: ",  meta)
     return ! meta.finished 
 
 }
@@ -188,23 +188,54 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     transcripttext = transcript.text
     transcriptsrc = transcript.src
     nextep =  encodeURIComponent(getNextep(ep))
-    console.log("epPath", epPath,   "meta",  meta)
+
     res.render("playtrans", {pod, mp3file: mp3name, 
         transcript: transcripttext,
         source: transcriptsrc, meta, nextep, layout: false})
 
 })
 
-app.get("/recentListen", (req, res) => {
-    // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
-    let epList = []
-    res.render("recentListen", {epList, layout: false})
-})
-
 app.get("/recentPublish", (req, res) => {
-    // TBD get data from podcast feed ? when ?
+      // TBD get data from podcast feed ? when ?
+    
     let epList = []
     res.render("recentPublish", {epList, layout: false})
+})
+
+app.get("/recentListen", (req, res) => {
+
+      // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
+    let podPath = path.join(__dirname, "content")
+
+    let contents = fs.readdirSync(podPath, {withFileTypes: true})
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name)
+    // for each podcast
+    let epList = []
+    contents.forEach(podName => {
+
+        if (!(BADFILES.includes(podName))) {
+            let ppath = path.join(podPath, podName)
+      
+            let eps = fs.readdirSync(ppath, { withFileTypes: true })
+                        .filter(dirent => dirent.isFile() && dirent.name.endsWith('.meta'))
+                        .map(dirent => dirent.name);
+            eps.forEach(ep => {
+        
+                let metapath = path.join(ppath, ep)
+     
+                let meta = JSON.parse(fs.readFileSync(metapath, 'utf-8'))
+     
+                let barename = ep.slice(0, -5) 
+                let epentry = {pod: podName, name: barename, encoded: encodeURIComponent(barename), meta}
+                epList.push(epentry)
+            })
+        }
+    })
+    epList = epList.filter(ep => ep.meta.timeLastOpened !== 0)
+    epList.sort((a, b) => b.meta.timeLastOpened.localeCompare(a.meta.timeLastOpened))
+
+    res.render("recentListen", {epList, layout: false})
 })
 
 function readMetaEp(pod, ep)  {
@@ -254,7 +285,7 @@ function writeMetaPod(folderName, order, show) {
 
 
 app.post('/update-meta-ep', (req, res) => {
-    console.log("BODY>", req.body)
+
     const { name, finished, timeLastOpened, timeInPod } = req.body;
     // TBD cut off mp3 and change to meta
     // TBD maybe some URL ding needed here
@@ -273,7 +304,7 @@ app.post('/update-meta-ep', (req, res) => {
 });
 
 app.post('/update-meta-pod', (req, res) => {
-    console.log("BODY>", req.body)
+ 
     const { name, order, show } = req.body;
     const folderPath = path.join(__dirname, "content", name);
 
@@ -288,7 +319,7 @@ app.post('/update-meta-pod', (req, res) => {
 app.use(express.static("content"))
 
 app.listen(PORT, () =>
-    console.log(`Example app listening on port ${PORT}`)
+    console.log(`Listening on port ${PORT}`)
 )
 
 function findFileInDirectory(directory, searchString) {
@@ -297,7 +328,7 @@ function findFileInDirectory(directory, searchString) {
         const matchingFiles = files.filter(file => file.includes(searchString));
 
         if (matchingFiles.length > 0) {
-            console.log("Found files:", matchingFiles);
+         
             return matchingFiles
         } else {
             console.log("No matching files found.");
@@ -337,7 +368,6 @@ const getTranscript = (pod, ep) => {
             const res = findFileInDirectory(transfolder, index)
             if (res.length == 1) {
                 foundtranscript = res[0]
-                console.log("found ", foundtranscript)
             } 
     
     // 2 If so convert to json and use that
