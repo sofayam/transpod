@@ -91,6 +91,11 @@
     <div id="audio-container">
         <span id=podtitle></span> [{{source}}]  <button id="back">↩️</button>
         <p>
+            {{#if info.published}}
+            <span>Published: {{info.published}}</span>
+            {{/if}}
+        </p>
+        <p>
       
             <input type="range" id="seekSlider" min="0" value="0" step="0.1" disabled>
         </p>
