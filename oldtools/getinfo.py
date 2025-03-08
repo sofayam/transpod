@@ -29,7 +29,6 @@ def getInfo(rss_feed_url, download_folder):
     for latest_episode in feed.entries:    
     
         episode_title = latest_episode.title
-        media_url = latest_episode.enclosures[0].href  # Get the media URL from the 'enclosures'
 
         # Ensure the download folder exists
         os.makedirs(download_folder, exist_ok=True)
