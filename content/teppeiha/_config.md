@@ -1,6 +1,5 @@
 {
     "feed": "http://nihongoconteppeiha.fukushuconteppei.com/feed/podcast/nihongo-con-teppei-ha",
-    "nochunk": 1
-    
-
+    "nochunk": 1,
+    "live": 1
 }
