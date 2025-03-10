@@ -89,7 +89,7 @@
 
 
     <div id="audio-container">
-        <span id=podtitle></span> [{{source}}]  <button id="back">↩️</button>
+        <span id=podtitle></span> [{{source}}]  <button id="back">⬆️</button> <button id="top">⏫</button>
         <p>
             {{#if info.published}}
             <span>Published: {{info.published}}</span>
@@ -165,6 +165,7 @@
         const transcriptionContainer = document.getElementById("transcription");
         const nextBtn = document.getElementById("next");
         const backBtn = document.getElementById("back");
+        const topBtn = document.getElementById("top");
         const playpauseBtn = document.getElementById("playpause");
         // const pauseBtn = document.getElementById("pause");
         const rewindBtn = document.getElementById("rewind");
@@ -271,6 +272,26 @@
             // updateHighlight();
         });
 
+        audio.addEventListener("paused", () => {
+            playpauseBtn.innerHTML = "▶"
+            pptoggle = true
+
+        })
+
+
+        audio.addEventListener("ended", () => {
+            playpauseBtn.innerHTML = "▶"
+            pptoggle = true
+
+        })
+        
+        audio.addEventListener("play", () => {
+            playpauseBtn.innerHTML = "⏸"
+            pptoggle = false
+        })
+
+
+
       
   function logMessage(message) {
     console.log(message);
@@ -328,6 +349,11 @@ audio.addEventListener("progress", () => {
             saveMeta()
             localStorage.setItem("lastPage", "")
             window.location.href = "/pod/{{pod}}"
+        });
+        topBtn.addEventListener("click", () => {
+            saveMeta()
+            localStorage.setItem("lastPage", "")
+            window.location.href = "/"
         });
 
         rewindBtn.addEventListener("click", () => {
