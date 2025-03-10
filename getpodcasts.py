@@ -10,7 +10,7 @@ from transcribefast import transcribe
 
 
 # Function to download the latest podcast
-def download(rss_feed_url, download_folder, relative, first, last, savefeed, transcribeAsWell, sync):
+def download(rss_feed_url, download_folder, relative, first, last, savefeed, transcribeAsWell, sync, dryrun):
     # Parse the RSS feed
 
     podcatch = False
@@ -57,7 +57,9 @@ def download(rss_feed_url, download_folder, relative, first, last, savefeed, tra
             # Download the episode
             print(f"Downloading: {episode_title}", file=sys.stderr)
             response = requests.get(media_url, stream=True)
-
+            if dryrun:
+                print("Dryrun: Not downloading")
+                continue
             if response.status_code == 200:
                 with open(mp3path, "wb") as file:
                     for chunk in response.iter_content(chunk_size=1024):
@@ -101,6 +103,8 @@ def parse_args():
     parser.add_argument("-t", "--transcribe", help="Run transcribe on the downloaded files", action="store_true")
 
     parser.add_argument("-s", "--sync", help="sync to NAS with rsync", action="store_true")
+
+    parser.add_argument("-d", "--dryrun", help="all talk and no action", action="store_true")
     
     args = parser.parse_args()
 
@@ -132,4 +136,4 @@ rss_feed_url = conf["feed"]
 savefeed =  "savefeed" in list(conf.keys())
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
-download(rss_feed_url, download_folder, relative, first, last, savefeed, getattr(args,"transcribe"), getattr(args,"sync"))
+download(rss_feed_url, download_folder, relative, first, last, savefeed, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"))
