@@ -7,6 +7,8 @@ import config
 import json
 import sys
 from transcribefast import transcribe
+from addDuration import process_mp3
+
 
 
 # Function to download the latest podcast
@@ -66,6 +68,7 @@ def download(rss_feed_url, download_folder, relative, first, last, savefeed, tra
                         file.write(chunk)
                 print(mp3path)
                 json.dump(latest_episode, open(infopath, "w", encoding='utf8'), ensure_ascii=False, indent=4)
+                process_mp3(mp3path)
                 if transcribe:
                     if transcribeAsWell:
                         transcribe(mp3path)

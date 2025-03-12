@@ -66,11 +66,8 @@
                 {{else}}
                     🔴
                 {{/if}}
-                  {{displayname}} </a>
+        {{displayname}} [{{info.itunes_duration}}] </a> 
                 </div>
-        {{#each chunks}}
-            <a href="/play/{{../../pod}}/{{../encoded}}.mp3chunk_{{this}}">{{this}} </a> 
-        {{/each}}
         </li>
     {{/each}}
     </ul>

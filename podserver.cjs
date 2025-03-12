@@ -53,9 +53,6 @@ app.get("/", (req, res, next) => {
     res.render("podcasts", { pods: pcData, layout: false })
 })
 
-function comparePubdate(ep1, ep2) {
-
-}
 function compareEpisode(ep1, ep2) {
 
     // TBD include various sorting criteria here based on data in _config.md
