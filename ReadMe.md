@@ -20,6 +20,11 @@ Playback features
 - show what has already been played
 - sort by latest over all podcasts
 
+History Database
+- unplayed/finished/played till
+- tags
+- notes?
+- 
 # hugging face token
 is in kypass
 
