@@ -212,10 +212,12 @@ app.get("/recentPublish", (req, res) => {
                 let infopath = path.join(ppath, ep)
 
                 let info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
-
-                let barename = ep.slice(0, -5)
-                let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), info }
-                epList.push(epentry)
+                if (info.published_parsed) {
+             
+                    let barename = ep.slice(0, -5)
+                    let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), info }
+                    epList.push(epentry)
+                }
             })
         }
     })
