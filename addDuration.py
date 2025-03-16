@@ -40,7 +40,8 @@ def process_mp3(mp3_path):
         except (json.JSONDecodeError, FileNotFoundError):
             data = {}
 
-        if "itunes_duration" not in data:
+    #    if "itunes_duration" not in data:
+        if True:
             data["itunes_duration"] = duration
             with open(info_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)

@@ -57,8 +57,13 @@ def download(rss_feed_url, download_folder, relative, first, last, savefeed, tra
             print(mp3path, "already downloaded", file=sys.stderr)
         else:
             # Download the episode
+            headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
+
+
             print(f"Downloading: {episode_title}", file=sys.stderr)
-            response = requests.get(media_url, stream=True)
+            response = requests.get(media_url, headers=headers, stream=True)
             if dryrun:
                 print("Dryrun: Not downloading")
                 continue
