@@ -1,3 +1,10 @@
+# stretch goals 
+Record user progress
+Organize into groups
+Integrate teppeis own transcripts 
+
+
+
 # New Goals
 
 All singing all dancing podcast downloader/transcriber/player
