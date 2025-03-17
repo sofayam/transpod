@@ -24,6 +24,7 @@ path = require('path');
 const exphbs = require('express-handlebars');
 const { getDefaultAutoSelectFamilyAttemptTimeout } = require('net')
 const { default: e } = require('express')
+const { info } = require('console')
 const hbs = exphbs.create({
     extname: 'hbs',
     helpers: {
@@ -235,6 +236,41 @@ app.get("/recentPublish", (req, res) => {
     res.render("recentPublish", { epList, layout: false })
 })
 
+function addTimes(times) {
+    // Initialize total seconds
+    let totalSeconds = 0;
+    
+    // Process each time string
+    times.forEach(time => {
+      // Remove the leading colon if present
+      const cleanTime = time.startsWith(':') ? time.substring(1) : time;
+      
+      // Split the time string into parts
+      const parts = cleanTime.split(':').map(Number);
+      
+      // Handle different formats
+      if (parts.length === 3) {
+        // Format is HH:mm:ss
+        const [hours, minutes, seconds] = parts;
+        totalSeconds += (hours * 3600) + (minutes * 60) + seconds;
+      } else if (parts.length === 2) {
+        // Format is mm:ss
+        const [minutes, seconds] = parts;
+        totalSeconds += (minutes * 60) + seconds;
+      }
+    });
+    
+    // Convert total seconds back to HH:mm:ss format
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    // Format with leading zeros and return with leading colon
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  
+
+
 app.get("/recentListen", (req, res) => {
 
     // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
@@ -257,21 +293,40 @@ app.get("/recentListen", (req, res) => {
 
                 let metapath = path.join(ppath, ep)
 
+                // get info file TODO
+                let infopath = path.join(ppath, ep.slice(0, -5) + ".info")
+
                 let meta = JSON.parse(fs.readFileSync(metapath, 'utf-8'))
 
+                let info = {}
+                if (fs.existsSync(infopath)) {
+                    info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
+                } 
+
                 let barename = ep.slice(0, -5)
-                let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), meta }
+                let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), meta, info }
                 epList.push(epentry)
             })
         }
     })
+    let times = []
+    epList.forEach(ep => {
+        if (ep.meta.finished) {
+            if (ep.info) {
+                times.push(ep.info.itunes_duration)   
+            } 
+        }
+    })
+    let totalTime = addTimes(times)
+     
+    
     epList = epList.filter(ep => ep.meta.timeLastOpened !== 0)
     epList.sort((a, b) => b.meta.timeLastOpened.localeCompare(a.meta.timeLastOpened))
 
     // take the first 100
     epList = epList.slice(0, 100)
 
-    res.render("recentListen", { epList, layout: false })
+    res.render("recentListen", { epList, totalTime, layout: false })
 })
 
 function readMetaEp(pod, ep) {
