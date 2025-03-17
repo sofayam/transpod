@@ -124,6 +124,8 @@ app.get("/pod/:id", (req, res, next) => {
 
 
 function isUnfinished(podName, epName) {
+    // console.log("isUnfinished", podName, epName)
+    
     meta = readMetaEp(podName, epName)
     return !meta.finished
 
@@ -215,7 +217,8 @@ app.get("/recentPublish", (req, res) => {
                 if (info.published_parsed) {
              
                     let barename = ep.slice(0, -5)
-                    let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), info }
+               
+                    let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), info, finished: !(isUnfinished(podName, barename)) }
                     epList.push(epentry)
                 }
             })

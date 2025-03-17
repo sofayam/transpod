@@ -46,7 +46,11 @@
         <ul>
         {{#each epList}}
             <li>
-                {{this.info.published}} <a href="/play/{{this.pod}}/{{this.encoded}}">  {{this.pod}}: {{this.name}}</a>
+                {{this.info.published}} <a href="/play/{{this.pod}}/{{this.encoded}}">  {{this.pod}}: {{this.name}} {{#if finished}}
+                    ✅
+                {{else}}
+                    🔴
+                {{/if}}</a>
             </li>
         {{/each}}
         </ul>

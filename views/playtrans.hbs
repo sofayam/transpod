@@ -398,7 +398,11 @@ audio.addEventListener("progress", () => {
                         console.log(`Updated meta for ${name}`);
                     }
                     if (andNext) {
+                        {{#if nextep}}  
                         window.location.href = "/play/{{pod}}/{{{nextep}}}"
+                        {{else}}
+                        window.location.href = "/pod/{{pod}}"
+                        {{/if}}
                     }
                 })
                 .catch(error => console.error("Fetch error:", error));
