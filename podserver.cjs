@@ -313,7 +313,10 @@ app.get("/recentListen", (req, res) => {
     epList.forEach(ep => {
         if (ep.meta.finished) {
             if (ep.info) {
-                times.push(ep.info.itunes_duration)   
+                //  check if itunes_duration is present and is of type string
+                if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
+                    times.push(ep.info.itunes_duration)   
+                }
             } 
         }
     })
