@@ -119,6 +119,10 @@ select {
   </head>
   <body>
     <h1>Choose a podcast</h1>
+    <select id="coreSetChoice">
+        <option value="false" {{#if (eq coresetOnly "false")}}selected{{/if}}>All</option>
+        <option value="true" {{#if (eq coresetOnly "true")}}selected{{/if}}>Core set only</option>
+    </select>
 <div class="container">
     <div class="table">
         {{#each pods}}
@@ -136,7 +140,8 @@ select {
                     <option value="unfinished" {{#if (eq this.show "unfinished")}}selected{{/if}}>🔴</option>
                 </select>
             </div>
-        </div>
+<!-- add a hidden field here -->
+    
         {{/each}}
     </div>
 
@@ -148,35 +153,61 @@ select {
 
 <script>
 
-window.addEventListener("load", function() {
-    const lastPage = localStorage.getItem("lastPage");
-    if (lastPage) {
-        window.location.href = lastPage;
-    }
-}); 
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("select").forEach(select => {
+    window.addEventListener("load", function () {
+        const lastPage = localStorage.getItem("lastPage");
+        if (lastPage) {
+            window.location.href = lastPage;
+        }
+    });
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const coreSetChoice = document.getElementById("coreSetChoice");
+
+        coreSetChoice.addEventListener("change", function () {
+            const selectedValue = coreSetChoice.value;
+
+            fetch("/update-meta-global", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ coresetOnly: selectedValue })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert(`Error: ${data.message}`);
+                    } else {
+                        console.log(`Core set choice updated to: ${selectedValue}`);
+                        // location.reload(); // Reload the page to reflect changes
+                    }
+                })
+                .catch(error => console.error("Fetch error:", error));
+        });
+
+
+
+    document.querySelectorAll(".table select").forEach(select => {
         select.addEventListener("change", function () {
             const name = this.getAttribute("data-folder");
 
             // Get latest values of both dropdowns
             const order = document.querySelector(`.order[data-folder="${name}"]`).value;
             const show = document.querySelector(`.show[data-folder="${name}"]`).value;
+            const coreset = TBD This is a mess
 
             fetch("/update-meta-pod", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, order, show })
+                body: JSON.stringify({ name, order, show, coreset })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    alert(`Error: ${data.message}`);
-                } else {
-                    console.log(`Updated meta for ${name}`);
-                }
-            })
-            .catch(error => console.error("Fetch error:", error));
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert(`Error: ${data.message}`);
+                    } else {
+                        console.log(`Updated meta for ${name}`);
+                    }
+                })
+                .catch(error => console.error("Fetch error:", error));
         });
     });
 });

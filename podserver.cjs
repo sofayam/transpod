@@ -39,19 +39,19 @@ app.use(express.json())
 
 app.get("/", (req, res, next) => {
     let podPath = path.join(__dirname, "content")
+    // check for global meta and filter out the advanced stuff
     let contents = fs.readdirSync(podPath, { withFileTypes: true })
         .filter(dirent => dirent.isDirectory())
         .map(dirent => dirent.name)
     let pcData = []
     contents.forEach(file => {
         // console.log(file)
-        if (!(BADFILES.includes(file))) {
             let meta = readMetaPod(file)
             podEntry = { name: file, ...meta }
             pcData.push(podEntry)
-        }
     })
-    res.render("podcasts", { pods: pcData, layout: false })
+    metaGlobal = readMetaGlobal()
+    res.render("podcasts", { pods: pcData, layout: false, coresetOnly: metaGlobal.coresetOnly})
 })
 
 function compareEpisode(ep1, ep2) {
@@ -120,7 +120,7 @@ app.get("/pod/:id", (req, res, next) => {
 
     orderList = epData
 
-    res.render("episodes", { eps: epData, pod: podName, layout: false })
+    res.render("episodes", { eps: epData, pod: podName, meta, layout: false })
 })
 
 
@@ -345,8 +345,24 @@ function readMetaEp(pod, ep) {
 }
 
 
-function readMetaPod(folderName) {
+function  readMetaPod(folderName) {
     const metaPath = path.join(__dirname, "content", `${folderName}.meta`);
+    if (fs.existsSync(metaPath)) {
+        try {
+            returnVal = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+            if (!returnVal.coreset) {
+                returnVal.coreset = "false"
+            }
+            return returnVal
+        } catch (error) {
+            console.error(`Error reading ${metaPath}:`, error);
+        }
+    }
+    return { order: "latest", show: "all" , coreset: "false"}; // Default values
+}
+
+function  readMetaGlobal() {
+    const metaPath = path.join(__dirname, "content/_global.meta");
     if (fs.existsSync(metaPath)) {
         try {
             return JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
@@ -354,7 +370,7 @@ function readMetaPod(folderName) {
             console.error(`Error reading ${metaPath}:`, error);
         }
     }
-    return { order: "latest", show: "all" }; // Default values
+    return { coresetOnly: "true" }; // Default values
 }
 
 function writeMetaEp(metaPath, finished, timeLastOpened, timeInPod) {
@@ -364,9 +380,9 @@ function writeMetaEp(metaPath, finished, timeLastOpened, timeInPod) {
 }
 
 
-function writeMetaPod(folderName, order, show) {
+function writeMetaPod(folderName, order, show, coreset) {
     const metaPath = path.join(__dirname, "content", `${folderName}.meta`);
-    const metaData = { order, show };
+    const metaData = { order, show, coreset};
 
     try {
         fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');
@@ -376,6 +392,16 @@ function writeMetaPod(folderName, order, show) {
     }
 }
 
+function writeMetaGlobal(coresetOnly) {
+    const metaPath = path.join(__dirname, "content/_global.meta");
+    const metaData = { coresetOnly };  
+    try {
+        fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');
+        console.log(`Updated global meta file: ${metaPath}`);
+    } catch (error) {
+        console.error(`Error writing ${metaPath}:`, error);
+    }
+}
 
 
 app.post('/update-meta-ep', (req, res) => {
@@ -399,14 +425,25 @@ app.post('/update-meta-ep', (req, res) => {
 
 app.post('/update-meta-pod', (req, res) => {
 
-    const { name, order, show } = req.body;
+    const { name, order, show, coreset } = req.body;
     const folderPath = path.join(__dirname, "content", name);
 
     if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-        writeMetaPod(name, order, show);
+        writeMetaPod(name, order, show, coreset);
         res.json({ success: true });
     } else {
         res.status(400).json({ success: false, message: "Invalid Podcast" });
+    }
+});
+
+app.post('/update-meta-global', (req, res) => {
+
+    const { coresetOnly } = req.body;
+    try {
+        writeMetaGlobal(coresetOnly);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(400).json({ success: false, message: "Error storing global metadata" });
     }
 });
 
