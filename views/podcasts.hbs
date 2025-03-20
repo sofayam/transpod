@@ -120,10 +120,7 @@ select {
   </head>
   <body>
     <h1>Choose a podcast</h1>
-    <select id="coreSetChoice">
-        <option value="false" {{#if (eq coresetOnly "false")}}selected{{/if}}>Fire Hose</option>
-        <option value="true" {{#if (eq coresetOnly "true")}}selected{{/if}}>Core set only</option>
-    </select>
+
 <div class="container">
     <div class="table">
         {{#each pods}}
@@ -153,6 +150,10 @@ select {
 
 </div>
 <div class="link-container">
+        <select id="coreSetChoice">
+        <option value="false" {{#if (eq coresetOnly "false")}}selected{{/if}}>Fire Hose</option>
+        <option value="true" {{#if (eq coresetOnly "true")}}selected{{/if}}>Core set only</option>
+    </select>
     <a href="/recentListen" class="styled-link">Recent listening</a>
     <a href="/recentPublish" class="styled-link">Recently Published</a>
 </div>

@@ -60,11 +60,7 @@
 
 
     <a href="/">Return to podcast list</a>
-<h1>Include in core set:</h1>
-    <select id="coreSetChoice">
-        <option value="false" {{#if (eq meta.coreset "false")}}selected{{/if}}>Not Included</option>
-        <option value="true" {{#if (eq meta.coreset "true")}}selected{{/if}}>Included</option>
-    </select>
+
     <h1>Choose an episode of {{pod}}</h1>
     <ul>
     {{#each eps}}
@@ -78,36 +74,5 @@
         </li>
     {{/each}}
     </ul>
-
-
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-
-        const coreSetChoice = document.getElementById("coreSetChoice");
-
-        coreSetChoice.addEventListener("change", function () {
-            const selectedValue = coreSetChoice.value;
-
-            fetch("/update-meta-pod", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({name: "{{pod}}", order: "{{meta.order}}", show: "{{meta.show}}", coreset: selectedValue })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.success) {
-                        alert(`Error: ${data.message}`);
-                    } else {
-                        console.log(`Core set choice updated to: ${selectedValue}`);
-                        // location.reload(); // Reload the page to reflect changes
-                    }
-                })
-                .catch(error => console.error("Fetch error:", error));
-        });
-    })
-
-
-</script>
-
   </body>
 </html>

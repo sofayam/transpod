@@ -25,6 +25,7 @@ const exphbs = require('express-handlebars');
 const { getDefaultAutoSelectFamilyAttemptTimeout } = require('net')
 const { default: e } = require('express')
 const { info } = require('console')
+const { finished } = require('stream')
 const hbs = exphbs.create({
     extname: 'hbs',
     helpers: {
@@ -318,7 +319,7 @@ app.get("/recentListen", (req, res) => {
                 } 
 
                 let barename = ep.slice(0, -5)
-                let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), meta, info }
+                let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), meta, info, finished: !(isUnfinished(podName, barename)) } 
                 epList.push(epentry)
             })
         }
