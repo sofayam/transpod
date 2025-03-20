@@ -37,12 +37,30 @@ app.set('view engine', 'hbs');
 
 app.use(express.json())
 
-app.get("/", (req, res, next) => {
+function getPods() {
+    
+    let coresetOnly = readMetaGlobal().coresetOnly === "true"
+    let isCore = function (pod) {
+        if (coresetOnly) {
+            // get path to meta file
+            let metaPath = path.join(__dirname, "content", pod + ".meta")
+            let meta = readMetaPod(pod)
+            return meta.coreset === "true"
+        } else {
+            return true
+        }
+    }
     let podPath = path.join(__dirname, "content")
-    // check for global meta and filter out the advanced stuff
     let contents = fs.readdirSync(podPath, { withFileTypes: true })
         .filter(dirent => dirent.isDirectory())
+        .filter(pod => isCore(pod.name))
         .map(dirent => dirent.name)
+    return contents
+}
+
+app.get("/", (req, res, next) => {
+
+    let contents = getPods()
     let pcData = []
     contents.forEach(file => {
         // console.log(file)
@@ -197,9 +215,7 @@ app.get("/recentPublish", (req, res) => {
     // Get all podcast info, sort on published_parsed field
     let podPath = path.join(__dirname, "content")
 
-    let contents = fs.readdirSync(podPath, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory())
-        .map(dirent => dirent.name)
+    let contents = getPods()
     // for each podcast
     let epList = []
     contents.forEach(podName => {
@@ -276,9 +292,7 @@ app.get("/recentListen", (req, res) => {
     // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
     let podPath = path.join(__dirname, "content")
 
-    let contents = fs.readdirSync(podPath, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory())
-        .map(dirent => dirent.name)
+    let contents = getPods()
     // for each podcast
     let epList = []
     contents.forEach(podName => {

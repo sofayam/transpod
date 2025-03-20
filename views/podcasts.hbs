@@ -60,9 +60,9 @@ h1 {
 
 /* Ensure dropdowns shrink but stay usable */
 select {
-    flex: 1;
-    min-width: 110px; /* Prevents dropdowns from getting too tiny */
-    max-width: 150px; /* Stops dropdowns from taking up too much space */
+    flex: 0 1 auto; /* Allow the select boxes to shrink or grow naturally */
+    min-width: 80px; /* Set a smaller minimum width */
+    max-width: 120px; /* Set a smaller maximum width */
     padding: 6px;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -93,6 +93,7 @@ select {
     background-color: #0056b3;
 }
 
+
 /* Responsive Design */
 @media (max-width: 480px) {
     .table-header, .table-row {
@@ -120,7 +121,7 @@ select {
   <body>
     <h1>Choose a podcast</h1>
     <select id="coreSetChoice">
-        <option value="false" {{#if (eq coresetOnly "false")}}selected{{/if}}>All</option>
+        <option value="false" {{#if (eq coresetOnly "false")}}selected{{/if}}>Fire Hose</option>
         <option value="true" {{#if (eq coresetOnly "true")}}selected{{/if}}>Core set only</option>
     </select>
 <div class="container">
@@ -140,8 +141,13 @@ select {
                     <option value="unfinished" {{#if (eq this.show "unfinished")}}selected{{/if}}>🔴</option>
                 </select>
             </div>
-<!-- add a hidden field here -->
-    
+            <div class="col">
+                <select class="coreset" data-folder="{{this.name}}">
+                    <option value="false" {{#if (eq this.coreset "false")}}selected{{/if}}>All</option>
+                    <option value="true" {{#if (eq this.coreset "true")}}selected{{/if}}>Core</option>
+                </select>
+            </div>
+        </div>
         {{/each}}
     </div>
 
@@ -192,7 +198,7 @@ select {
             // Get latest values of both dropdowns
             const order = document.querySelector(`.order[data-folder="${name}"]`).value;
             const show = document.querySelector(`.show[data-folder="${name}"]`).value;
-            const coreset = TBD This is a mess
+            const coreset = document.querySelector(`.coreset[data-folder="${name}"]`).value;
 
             fetch("/update-meta-pod", {
                 method: "POST",
