@@ -45,7 +45,7 @@ def download(rss_feed_url, download_folder, relative, first, last, savefeed, tra
         # Ensure the download folder exists
         os.makedirs(download_folder, exist_ok=True)
 
-        file_base = episode_title.replace(" ", "_").replace("/", "_") 
+        file_base = episode_title.replace(" ", "_").replace("/", "_").replace(":", "_").replace("'", "_").replace('"', "_")
         mp3name = file_base + ".mp3"
         infoname = file_base + ".info"
 
