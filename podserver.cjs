@@ -274,6 +274,16 @@ function parseTimeToSeconds(time) {
     return totalseconds
 }
 
+function formatSeconds(totalSeconds) {
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    // Format with leading zeros and return with leading colon
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+} 
+
 function addTimes(times) {
     // Initialize total seconds
     let totalSeconds = 0;
@@ -284,13 +294,8 @@ function addTimes(times) {
     );
     
     // Convert total seconds back to HH:mm:ss format
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    
-    // Format with leading zeros and return with leading colon
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  }
+       return formatSeconds(totalSeconds) 
+     }
   
 
 function listenData() {
@@ -349,6 +354,8 @@ app.get("/chart", (req, res) => {
     let {epList, times} = listenData();
 
     let listenDays = {}
+    let totpod = 0
+    let totseconds = 0
 
     epList.forEach(ep => {
         if (ep.meta.finished) {
@@ -356,8 +363,10 @@ app.get("/chart", (req, res) => {
                 if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
                     // get time of ep
                     // {date: "2025-03-01", count: 2, totalMinutes: 70},
+                    totpod += 1
                     let time = ep.info.itunes_duration
                     let seconds = parseTimeToSeconds(time)
+                    totseconds += seconds
                     let date = ep.meta.timeLastOpened.substring(0,10)
                     if (listenDays[date]) {
                         listenDays[date].count++
@@ -373,12 +382,14 @@ app.get("/chart", (req, res) => {
     // convert listenDays to an array of objects with date, count, time
 
     listenList = []
-    Object.keys(listenDays).forEach(key => {
+    Object.keys(listenDays).sort().forEach(key => {
         let entry = {date: key, count: listenDays[key].count, totalMinutes: listenDays[key].totalSeconds / 60}
         listenList.push(entry)
     })
 
-    res.render("chart", { listenList, layout: false })
+    tottime = formatSeconds(totseconds)
+
+    res.render("chart", { listenList, totpod, tottime, layout: false })
 })
 
 app.get("/recentListen", (req, res) => {
