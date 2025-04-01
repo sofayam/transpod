@@ -253,12 +253,7 @@ app.get("/recentPublish", (req, res) => {
     res.render("recentPublish", { epList, layout: false })
 })
 
-function addTimes(times) {
-    // Initialize total seconds
-    let totalSeconds = 0;
-    
-    // Process each time string
-    times.forEach(time => {
+function parseTimeToSeconds(time) {
       // Remove the leading colon if present
       const cleanTime = time.startsWith(':') ? time.substring(1) : time;
       
@@ -266,16 +261,27 @@ function addTimes(times) {
       const parts = cleanTime.split(':').map(Number);
       
       // Handle different formats
+      var totalseconds = 0;
       if (parts.length === 3) {
         // Format is HH:mm:ss
         const [hours, minutes, seconds] = parts;
-        totalSeconds += (hours * 3600) + (minutes * 60) + seconds;
+        totalseconds = (hours * 3600) + (minutes * 60) + seconds;
       } else if (parts.length === 2) {
         // Format is mm:ss
         const [minutes, seconds] = parts;
-        totalSeconds += (minutes * 60) + seconds;
+        totalseconds = (minutes * 60) + seconds;
       }
-    });
+    return totalseconds
+}
+
+function addTimes(times) {
+    // Initialize total seconds
+    let totalSeconds = 0;
+    
+    // Process each time string
+    times.forEach(time => 
+        totalSeconds += parseTimeToSeconds(time)  
+    );
     
     // Convert total seconds back to HH:mm:ss format
     const hours = Math.floor(totalSeconds / 3600);
@@ -287,54 +293,98 @@ function addTimes(times) {
   }
   
 
+function listenData() {
 
-app.get("/recentListen", (req, res) => {
+        // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
+        let podPath = path.join(__dirname, "content")
 
-    // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
-    let podPath = path.join(__dirname, "content")
-
-    let contents = getPods()
-    // for each podcast
-    let epList = []
-    contents.forEach(podName => {
-
-        if (!(BADFILES.includes(podName))) {
-            let ppath = path.join(podPath, podName)
-
-            let eps = fs.readdirSync(ppath, { withFileTypes: true })
-                .filter(dirent => dirent.isFile() && dirent.name.endsWith('.meta'))
-                .map(dirent => dirent.name);
-            eps.forEach(ep => {
-
-                let metapath = path.join(ppath, ep)
-
-                // get info file TODO
-                let infopath = path.join(ppath, ep.slice(0, -5) + ".info")
-
-                let meta = JSON.parse(fs.readFileSync(metapath, 'utf-8'))
-
-                let info = {}
-                if (fs.existsSync(infopath)) {
-                    info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
+        let contents = getPods()
+        // for each podcast
+        let epList = []
+        contents.forEach(podName => {
+    
+            if (!(BADFILES.includes(podName))) {
+                let ppath = path.join(podPath, podName)
+    
+                let eps = fs.readdirSync(ppath, { withFileTypes: true })
+                    .filter(dirent => dirent.isFile() && dirent.name.endsWith('.meta'))
+                    .map(dirent => dirent.name);
+                eps.forEach(ep => {
+    
+                    let metapath = path.join(ppath, ep)
+    
+                    // get info file TODO
+                    let infopath = path.join(ppath, ep.slice(0, -5) + ".info")
+    
+                    let meta = JSON.parse(fs.readFileSync(metapath, 'utf-8'))
+    
+                    let info = {}
+                    if (fs.existsSync(infopath)) {
+                        info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
+                    } 
+    
+                    let barename = ep.slice(0, -5)
+                    let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), meta, info, finished: !(isUnfinished(podName, barename)) } 
+                    epList.push(epentry)
+                })
+            }
+        })
+        let times = []
+        epList.forEach(ep => {
+            if (ep.meta.finished) {
+                if (ep.info) {
+                    //  check if itunes_duration is present and is of type string
+                    if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
+                        times.push(ep.info.itunes_duration)   
+                    }
                 } 
+            }
+        })
 
-                let barename = ep.slice(0, -5)
-                let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), meta, info, finished: !(isUnfinished(podName, barename)) } 
-                epList.push(epentry)
-            })
-        }
-    })
-    let times = []
+    return {epList, times}
+
+}
+
+app.get("/chart", (req, res) => {
+    let {epList, times} = listenData();
+
+    let listenDays = {}
+
     epList.forEach(ep => {
         if (ep.meta.finished) {
             if (ep.info) {
-                //  check if itunes_duration is present and is of type string
                 if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
-                    times.push(ep.info.itunes_duration)   
+                    // get time of ep
+                    // {date: "2025-03-01", count: 2, totalMinutes: 70},
+                    let time = ep.info.itunes_duration
+                    let seconds = parseTimeToSeconds(time)
+                    let date = ep.meta.timeLastOpened.substring(0,10)
+                    if (listenDays[date]) {
+                        listenDays[date].count++
+                        listenDays[date].totalSeconds += seconds
+                    } else {
+                        listenDays[date] = { date, count: 1, totalSeconds: seconds}
+                    }
                 }
-            } 
+            }
         }
     })
+
+    // convert listenDays to an array of objects with date, count, time
+
+    listenList = []
+    Object.keys(listenDays).forEach(key => {
+        let entry = {date: key, count: listenDays[key].count, totalMinutes: listenDays[key].totalSeconds / 60}
+        listenList.push(entry)
+    })
+
+    res.render("chart", { listenList, layout: false })
+})
+
+app.get("/recentListen", (req, res) => {
+
+    let {epList, times} = listenData();
+
     let totalTime = addTimes(times)
      
     

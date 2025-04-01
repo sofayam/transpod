@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast Listening Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 10px;
+            background-color: #e9f7ef;
+            border-radius: 4px;
+            width: 30%;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2e86c1;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Podcast Listening Tracker</h1>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-value" id="totalPodcasts">50</div>
+                <div class="stat-label">Total Podcasts</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="totalMinutes">2085</div>
+                <div class="stat-label">Total Minutes</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="averageLength">41.7</div>
+                <div class="stat-label">Avg. Minutes per Podcast</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="podcastChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Hardcoded podcast data
+        const podcastData = [
+            {{#each listenList}}
+            {
+                date: '{{this.date}}',
+                count: {{this.count}},
+                totalMinutes: {{this.totalMinutes}}
+            },
+            {{/each}} 
+        ];
+        
+        // Function to render the chart
+        function renderChart() {
+            const ctx = document.getElementById('podcastChart').getContext('2d');
+            
+            // Prepare chart data
+            const labels = podcastData.map(item => item.date);
+            const podcastCounts = podcastData.map(item => item.count);
+            const minutesTotals = podcastData.map(item => item.totalMinutes);
+            
+            // Create the chart
+            const myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Number of Podcasts',
+                            data: podcastCounts,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Total Minutes',
+                            data: minutesTotals,
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            type: 'line',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Number of Podcasts'
+                            },
+                            min: 0,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Total Minutes'
+                            },
+                            min: 0,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Render chart when page loads
+        document.addEventListener('DOMContentLoaded', renderChart);
+    </script>
+</body>
+</html>
