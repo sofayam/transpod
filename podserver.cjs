@@ -358,7 +358,7 @@ app.get("/chart", (req, res) => {
     let totseconds = 0
 
     epList.forEach(ep => {
-        if (ep.meta.finished) {
+        if (ep.meta.finished && ep.meta.timeLastOpened) {
             if (ep.info) {
                 if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
                     // get time of ep
