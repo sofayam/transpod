@@ -179,6 +179,12 @@
 
         const whisperData = {{{ transcript }}}    
 
+        function isIphone() {
+            return /iPhone/i.test(navigator.userAgent);
+        }   
+
+        const scrollPos = isIphone() ? "end" : "center";
+
         function setFontSize() {
             if (fontSize < FONTMIN) {
                 fontSize = FONTMIN
@@ -205,7 +211,7 @@
                     const startTime = parseFloat(span.dataset.start);
                     audio.currentTime = startTime; // Jump to the segments's start time
                     // audio.play(); // Resume playback
-                    span.scrollIntoView({ behavior: "smooth", block: "center" })
+                    span.scrollIntoView({ behavior: "smooth", block: scrollPos })
                 })
 
                 paragraph.appendChild(span);
@@ -238,7 +244,7 @@
 
                         // Highlight new phrase
                         phrases[i].classList.add("highlight");
-                        phrases[i].scrollIntoView({ behavior: "smooth", block: "center" });
+                        phrases[i].scrollIntoView({ behavior: "smooth", block: scrollPos });
 
                         currentPhraseIndex = i;
                     }

@@ -38,9 +38,12 @@ app.set('view engine', 'hbs');
 
 app.use(express.json())
 
-function getPods() {
+function getPods(forceAll = false) {
     
     let coresetOnly = readMetaGlobal().coresetOnly === "true"
+    if (forceAll) {
+        coresetOnly = false
+    }
     let isCore = function (pod) {
         if (coresetOnly) {
             // get path to meta file
@@ -316,7 +319,7 @@ function listenData() {
         // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
         let podPath = path.join(__dirname, "content")
 
-        let contents = getPods()
+        let contents = getPods(forceAll=true)
         // for each podcast
         let epList = []
         contents.forEach(podName => {
@@ -371,7 +374,7 @@ app.get("/chart", (req, res) => {
     let totseconds = 0
 
     epList.forEach(ep => {
-        if (ep.meta.finished) {
+        if (ep.meta.finished && ep.meta.timeLastOpened) {
             if (ep.info) {
                 if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
                     // get time of ep
