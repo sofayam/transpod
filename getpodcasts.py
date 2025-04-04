@@ -12,7 +12,7 @@ from addDuration import process_mp3
 
 
 # Function to download the latest podcast
-def download(rss_feed_url, download_folder, relative, first, last, savefeed, transcribeAsWell, sync, dryrun):
+def download(rss_feed_url, download_folder, relative, first, last, transcribeAsWell, sync, dryrun):
     # Parse the RSS feed
 
     podcatch = False
@@ -24,9 +24,6 @@ def download(rss_feed_url, download_folder, relative, first, last, savefeed, tra
         return
     else:
         print(len(feed.entries), " Entries in total", file=sys.stderr)
-        if savefeed:
-            latestfeedpath = open(download_folder + ".latestfeed", "w", encoding='utf8')
-            json.dump(feed.entries, latestfeedpath, ensure_ascii=False, indent=4)
 
     # Get the latest episode
 
@@ -141,7 +138,7 @@ else:
 
 conf = config.getConfig(feedfolder)
 rss_feed_url = conf["feed"]
-savefeed =  "savefeed" in list(conf.keys())
+
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
-download(rss_feed_url, download_folder, relative, first, last, savefeed, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"))
+download(rss_feed_url, download_folder, relative, first, last, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"))

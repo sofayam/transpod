@@ -82,6 +82,22 @@ function compareEpisode(ep1, ep2) {
 
 }
 
+function readConfig(podName) {
+    const configPath = path.join(__dirname, "content", podName, "_config.md");
+    if (fs.existsSync(configPath)) {
+            returnVal = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+            return returnVal
+    } 
+    return {}
+}
+
+function hasSortInfo(podName) {
+    let meta = readConfig(podName)
+    if (meta.sortInfo) {
+        return true
+    }
+    return false
+}
 
 app.get("/pod/:id", (req, res, next) => {
     let podName = req.params.id
@@ -92,11 +108,8 @@ app.get("/pod/:id", (req, res, next) => {
     // find no of chunks for each file
     let sortonpubdate = false
 
-    let latestfeedPath = path.join(__dirname, "content", podName + ".latestfeed")
-    if (fs.existsSync(latestfeedPath)) { // TODO change to use a sensible config value
-        sortonpubdate = true
-    }
-
+    sortonpubdate = hasSortInfo(podName)
+    
     contents.forEach(file => {
         // console.log(file)
         if (!(BADFILES.includes(file)))
