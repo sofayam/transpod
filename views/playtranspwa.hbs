@@ -27,6 +27,14 @@
         body {
             background-color: #f5f5f5;
         }
+
+                .highlight {
+            color: red;
+            background-color: white;
+            transition: background-color 0.5s ease;
+            /* Smooth highlight effect */
+        }
+
         
         /* Top button bar */
         .button-bar {
@@ -38,17 +46,23 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             z-index: 10;
         }
-        
-        .button-bar button {
-            background-color: transparent;
-            border: 1px solid white;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.2s;
+
+        input[type="range"] {
+            width: 100%;
         }
+        
+      .button-bar button {
+    background-color: transparent;
+    border: 1px solid white;
+    color: white;
+    padding: 4px 8px; /* Reduce padding for smaller buttons */
+    border-radius: 3px; /* Smaller border radius */
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.8rem; /* Reduce font size */
+    transition: background-color 0.2s;
+    min-width: 50px; /* Optional: Set a minimum width for buttons */
+}
         
         .button-bar button:hover {
             background-color: rgba(255,255,255,0.1);
@@ -122,9 +136,9 @@
             }
             
             .button-bar button {
-                padding: 8px 12px;
+                padding: 4px 8px;
                 font-size: 0.9rem;
-                min-width: 70px;
+                min-width: 40px;
             }
             
             .content-area {
@@ -253,87 +267,345 @@
 </head>
 <body>
     <!-- Top button bar -->
-    <div class="button-bar">
-        <button>Home</button>
-        <button>Action 1</button>
-        <button>Action 2</button>
-        <button>Menu</button>
+    <div class="button-bar" id="audio-container">
+<div>
+        <audio id="audio" controls>
+            <source src="{{mp3file}}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+            <input type="range" id="seekSlider" min="0" value="0" step="0.1" disabled>
+        </div>
+             <div>
+
+
+            <button id="next">⏭️</button>
+            <button id="rewind">⏪ -5s</button>
+            <button id="playpause">▶</button>
+            <button id="finished">✅</button>
+            <button id="increase-font">A↑</button>
+            <button id="decrease-font">A↓</button>
+            </div>
+  
     </div>
+
+   
     
     <!-- Middle scrolling text area -->
-    <div class="content-area">
-        <h2>Content Title</h2>
-        <p>This is the main scrollable content area of your PWA. You can place any content here that you want the user to be able to scroll through.</p>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam pulvinar risus non risus hendrerit venenatis. Pellentesque sit amet hendrerit risus, sed porttitor quam. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam pulvinar risus non risus hendrerit venenatis. Pellentesque sit amet hendrerit risus, sed porttitor quam.</p>
-        <p>Fusce convallis metus id felis luctus adipiscing. Pellentesque egestas, neque sit amet convallis pulvinar, justo nulla eleifend augue, ac auctor orci leo non est. Sed lectus. Donec mollis hendrerit risus. Phasellus nec sem in justo pellentesque facilisis.</p>
-        <p>Praesent congue erat at massa. Sed cursus turpis vitae tortor. Donec posuere vulputate arcu. Phasellus accumsan cursus velit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed aliquam, nisi quis porttitor congue, elit erat euismod orci, ac placerat dolor lectus quis orci.</p>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam pulvinar risus non risus hendrerit venenatis. Pellentesque sit amet hendrerit risus, sed porttitor quam. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam pulvinar risus non risus hendrerit venenatis. Pellentesque sit amet hendrerit risus, sed porttitor quam.</p>
-        <p>Fusce convallis metus id felis luctus adipiscing. Pellentesque egestas, neque sit amet convallis pulvinar, justo nulla eleifend augue, ac auctor orci leo non est. Sed lectus. Donec mollis hendrerit risus. Phasellus nec sem in justo pellentesque facilisis.</p>
-        <p>Praesent congue erat at massa. Sed cursus turpis vitae tortor. Donec posuere vulputate arcu. Phasellus accumsan cursus velit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed aliquam, nisi quis porttitor congue, elit erat euismod orci, ac placerat dolor lectus quis orci.</p>
+    <div class="content-area" id="transcription">
+  
     </div>
     
     <!-- Bottom status display -->
     <div class="status-bar">
+            <div class="status-item" id="timeDisplay">0:00 / 0:00</div>
+
+
+                    <span id=podtitle></span> [{{source}}]  <button id="back">⬆️</button> <button id="top">⏫</button>
         <div class="status-item">
-            <div class="status-indicator green"></div>
-            <span>Network: Online</span>
+            {{#if info.published}}
+            <span>Published: {{info.published}}</span>
+            {{/if}}
         </div>
-        <div class="status-item">
-            <div class="status-indicator yellow"></div>
-            <span>Battery: 65%</span>
-        </div>
-        <div class="status-item">
-            <div class="status-indicator red"></div>
-            <span>Storage: 90% Full</span>
-        </div>
-        <div class="status-item">
-            <span>Last updated: 5 mins ago</span>
-        </div>
+
     </div>
 
     <script>
-        // This is where you would add your PWA functionality
-        // Such as service worker registration, app logic, etc.
-        
-        // Example: Register service worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registered with scope:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.error('Service Worker registration failed:', error);
-                    });
-            });
+     
+ const FONTMAX = 40;
+        const FONTMIN = 12;
+
+
+        window.onload = function () {
+            window.scrollTo(0, 0);
+            localStorage.setItem("lastPage", window.location.href);
+
+        };
+
+        function adjustPadding() {
+            const audioContainer = document.getElementById("audio-container");
+            const transcriptionContainer = document.getElementById("transcription");
+
+            // Get the exact height of the fixed controls
+            const audioHeight = audioContainer.offsetHeight;
+
+            // Apply dynamic padding
+            transcriptionContainer.style.paddingTop = `${audioHeight + 20}px`; // Add extra spacing for safety
         }
+
+        // Adjust on load and resize
+        window.addEventListener("load", adjustPadding);
+        window.addEventListener("resize", adjustPadding);
+        document.addEventListener("DOMContentLoaded", () => {
+
+
+            let timeLastOpened = new Date()
+            let finished = {{ meta.finished }}
         
-        // Example: Update status indicators dynamically
-        function updateStatusIndicators() {
-            // In a real app, these would be actual checks
-            const isOnline = navigator.onLine;
-            document.querySelector('.status-item:nth-child(1) span').textContent = 
-                `Network: ${isOnline ? 'Online' : 'Offline'}`;
-            
-            // Battery API example (would need permissions)
-            if ('getBattery' in navigator) {
-                navigator.getBattery().then(battery => {
-                    const level = Math.floor(battery.level * 100);
-                    document.querySelector('.status-item:nth-child(2) span').textContent = 
-                        `Battery: ${level}%`;
-                });
+    let pptoggle = true
+
+    const decodedTitle = decodeURIComponent("{{{mp3file}}}")
+        document.getElementById("podtitle").textContent = decodedTitle
+        document.title = decodedTitle
+
+        const audio = document.getElementById("audio");
+        audio.controls = false
+        let seekSlider = document.getElementById("seekSlider");
+        const transcriptionContainer = document.getElementById("transcription");
+        const nextBtn = document.getElementById("next");
+        const backBtn = document.getElementById("back");
+        const topBtn = document.getElementById("top");
+        const playpauseBtn = document.getElementById("playpause");
+        // const pauseBtn = document.getElementById("pause");
+        const rewindBtn = document.getElementById("rewind");
+        const increaseFontBtn = document.getElementById("increase-font");
+        const decreaseFontBtn = document.getElementById("decrease-font");
+        const finishBtn = document.getElementById("finished");
+        const timeDisplay = document.getElementById("timeDisplay")
+      
+        fontSize = localStorage.getItem("fontSize") || 20;
+        setFontSize()
+
+        const whisperData = {{{ transcript }}}    
+
+        function isIphone() {
+            return /iPhone/i.test(navigator.userAgent);
+        }   
+
+        const scrollPos = isIphone() ? "end" : "center";
+
+        function setFontSize() {
+            if (fontSize < FONTMIN) {
+                fontSize = FONTMIN
+            } else if (fontSize > FONTMAX) {
+                fontSize = FONTMAX
             }
-            
-            // Update timestamp
-            document.querySelector('.status-item:nth-child(4) span').textContent = 
-                `Last updated: Just now`;
+             transcriptionContainer.style.fontSize = `${fontSize}px`;
+             localStorage.setItem("fontSize", fontSize)
         }
+
+        // Process the data into paragraphs and phrases
+        function renderTranscription(data) {
+            const paragraph = document.createElement("p");
+
+            data.forEach(segment => {
+
+                const span = document.createElement("span");
+                span.classList.add("phrase");
+                span.dataset.start = segment.start;
+                span.dataset.end = segment.end;
+                span.textContent = segment.text;
+
+                span.addEventListener("click", () => {
+                    const startTime = parseFloat(span.dataset.start);
+                    audio.currentTime = startTime; // Jump to the segments's start time
+                    // audio.play(); // Resume playback
+                    span.scrollIntoView({ behavior: "smooth", block: scrollPos })
+                })
+
+                paragraph.appendChild(span);
+            });
+
+
+            transcriptionContainer.appendChild(paragraph);
+        }
+
+        // Render the Whisper data
+        renderTranscription(whisperData);
+
+        // Highlight current phrase based on audio time
+        const phrases = document.querySelectorAll(".phrase");
+        let currentPhraseIndex = -1;
+
+        function highlightCurrentPhrase() {
+            const currentTime = audio.currentTime;
+
+            for (let i = 0; i < phrases.length; i++) {
+                const start = parseFloat(phrases[i].dataset.start);
+                const end = parseFloat(phrases[i].dataset.end);
+
+                if (currentTime >= start && currentTime < end) {
+                    if (currentPhraseIndex !== i) {
+                        // Remove previous highlight
+                        if (currentPhraseIndex !== -1) {
+                            phrases[currentPhraseIndex].classList.remove("highlight");
+                        }
+
+                        // Highlight new phrase
+                        phrases[i].classList.add("highlight");
+                        phrases[i].scrollIntoView({ behavior: "smooth", block: scrollPos });
+
+                        currentPhraseIndex = i;
+                    }
+                    return;
+                }
+            }
+
+            // Remove highlight if no phrase matches
+            if (currentPhraseIndex !== -1) {
+                phrases[currentPhraseIndex].classList.remove("highlight");
+                currentPhraseIndex = -1;
+            }
+        }
+
+        // Attach the timeupdate event listener
+        audio.addEventListener("timeupdate", function () {
+            updateTimeDisplay();
+            highlightCurrentPhrase();
+
+        })
+
+        // Audio control buttons
+        function setStartTime() {
+            audio.currentTime = {{ meta.timeInPod }}
+        seekSlider.max = audio.duration;
+        seekSlider.disabled = false;
+    }
+
+        seekSlider.addEventListener("input", function () {
+            audio.currentTime = seekSlider.value;
+            // updateHighlight();
+        });
+
+        audio.addEventListener("pause", () => {
+            playpauseBtn.innerHTML = "▶"
+            pptoggle = true
+
+        })
+
+
+        audio.addEventListener("ended", () => {
+            playpauseBtn.innerHTML = "▶"
+            pptoggle = true
+
+        })
         
-        // Call once on load
-        updateStatusIndicators();
+        audio.addEventListener("play", () => {
+            playpauseBtn.innerHTML = "⏸"
+            pptoggle = false
+        })
+
+
+
+      
+  function logMessage(message) {
+    console.log(message);
+    transcriptionContainer.insertAdjacentHTML("afterbegin", `<p>${message}</p>`);
+}
+audio.addEventListener("progress", () => {
+    if (audio.buffered.length > 0) {
+        const end = audio.buffered.end(0);
+        if (end >= audio.duration) {
+    
+                playpauseBtn.style.backgroundColor = "green";
+            // alert("MP3 has fully downloaded.");
+        }
+    }
+});
+
+
+        audio.addEventListener("canplaythrough", setStartTime)
+
+        nextBtn.addEventListener("click", () => {
+            saveMeta(true)
+        })
+
+        function formatTime(seconds) {
+            let min = Math.floor(seconds / 60);
+            let sec = Math.floor(seconds % 60);
+            return `${min}:${sec.toString().padStart(2, "0")}`;
+        }
+        function updateTimeDisplay() {
+            let current = formatTime(audio.currentTime);
+            let total = formatTime(audio.duration);
+            seekSlider.value = audio.currentTime;
+            timeDisplay.textContent = `${current} / ${total}`;
+        }
+
+        playpauseBtn.addEventListener("click", () => {
+            if (pptoggle) {
+                audio.play();
+                playpauseBtn.innerHTML = "⏸"
+            } else {
+                saveMeta();
+                playpauseBtn.innerHTML = "▶"
+                audio.pause()
+            }
+            pptoggle = !pptoggle;
+        });
+
+        finishBtn.addEventListener("click", () => {
+            finished = true
+            saveMeta(true)
+        })
+
+
+        backBtn.addEventListener("click", () => {
+            saveMeta()
+            localStorage.setItem("lastPage", "")
+            window.location.href = "/pod/{{pod}}"
+        });
+        topBtn.addEventListener("click", () => {
+            saveMeta()
+            localStorage.setItem("lastPage", "")
+            window.location.href = "/"
+        });
+
+        rewindBtn.addEventListener("click", () => {
+            audio.currentTime = Math.max(0, audio.currentTime - 5);
+        });
+        // Font size controls
+        increaseFontBtn.addEventListener("click", () => {
         
-        // Set up periodic refresh
-        setInterval(updateStatusIndicators, 60000); // Update every minute
-    </script>
+            fontSize += 2;
+             setFontSize()
+      
+        });
+
+        decreaseFontBtn.addEventListener("click", () => {
+          
+                fontSize -= 2;
+                setFontSize()
+            
+        });
+
+        window.onbeforeunload = function () {
+            saveMeta()
+        }
+
+        setInterval(() => {
+            if (! (audio.paused))
+                saveMeta()
+        }, 15000);
+
+        function saveMeta(andNext = false) {
+            let meta = { finished, timeLastOpened, timeInPod: audio.currentTime }
+            fetch("/update-meta-ep", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "{{mp3file}}", ...meta })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert(`Error: ${data.message}`);
+                    } else {
+                        console.log(`Updated meta for ${name}`);
+                    }
+                    if (andNext) {
+                        {{#if nextep}}  
+                        window.location.href = "/play/{{pod}}/{{{nextep}}}"
+                        {{else}}
+                        window.location.href = "/pod/{{pod}}"
+                        {{/if}}
+                    }
+                })
+                .catch(error => console.error("Fetch error:", error));
+
+        }
+});
+
+
+
+</script>
 </body>
 </html>

@@ -192,7 +192,7 @@ app.get("/play/:pod/:ep", (req, res, next) => {
         info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
     }   
 
-    res.render("playtrans", {
+    res.render("playtranspwa", {
         pod, mp3file: mp3name,
         transcript: transcripttext,
         source: transcriptsrc, meta, nextep, 
