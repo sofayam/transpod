@@ -206,7 +206,7 @@ app.get("/play/:pod/:ep", (req, res, next) => {
         info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
     }   
 
-    res.render("playtrans", {
+    res.render("playtranspwa", {
         pod, mp3file: mp3name,
         transcript: transcripttext,
         source: transcriptsrc, meta, nextep, 
@@ -408,6 +408,7 @@ app.get("/chart", (req, res) => {
 
     res.render("chart", { listenList, totpod, tottime, layout: false })
 })
+
 
 app.get("/recentListen", (req, res) => {
 
