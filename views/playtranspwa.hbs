@@ -40,7 +40,7 @@
         .button-bar {
             flex-shrink: 0;
             padding: 12px;
-            background-color: #4285F4;
+            background-color: #e3badf;
             display: flex;
             justify-content: space-between; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -86,7 +86,7 @@
         .status-bar {
             flex-shrink: 0;
             padding: 12px;
-            background-color: #333;
+            background-color: #adbb5c;
             color: white;
             display: flex;
             justify-content: space-between;
@@ -146,12 +146,12 @@
             }
             
             .content-area h2 {
-                font-size: 1.3rem;
+                
                 margin-bottom: 12px;
             }
             
             .content-area p {
-                font-size: 0.95rem;
+               
                 margin-bottom: 12px;
             }
             
@@ -186,7 +186,7 @@
             }
             
             .content-area h2 {
-                font-size: 1.5rem;
+               
                 margin-bottom: 16px;
             }
             
@@ -222,12 +222,12 @@
             }
             
             .content-area h2 {
-                font-size: 1.8rem;
+                
                 margin-bottom: 20px;
             }
             
             .content-area p {
-                font-size: 1.05rem;
+                
                 line-height: 1.6;
             }
             
@@ -362,7 +362,13 @@
         const finishBtn = document.getElementById("finished");
         const timeDisplay = document.getElementById("timeDisplay")
       
-        fontSize = localStorage.getItem("fontSize") || 20;
+       // fontSize = localStorage.getItem("fontSize")
+       // if fontSize == null || fontSize == undefined || fontSize == "NaN" || fontSize == "null") {
+            fontSize = 30
+       // } else {
+       //     fontSize = parseInt(fontSize)
+       // }
+    
         setFontSize()
 
         const whisperData = {{{ transcript }}}    
@@ -371,7 +377,7 @@
             return /iPhone/i.test(navigator.userAgent);
         }   
 
-        const scrollPos = isIphone() ? "end" : "center";
+      
 
         function setFontSize() {
             if (fontSize < FONTMIN) {
@@ -399,7 +405,7 @@
                     const startTime = parseFloat(span.dataset.start);
                     audio.currentTime = startTime; // Jump to the segments's start time
                     // audio.play(); // Resume playback
-                    span.scrollIntoView({ behavior: "smooth", block: scrollPos })
+                    span.scrollIntoView({ behavior: "smooth", block: "center" })
                 })
 
                 paragraph.appendChild(span);
@@ -432,7 +438,7 @@
 
                         // Highlight new phrase
                         phrases[i].classList.add("highlight");
-                        phrases[i].scrollIntoView({ behavior: "smooth", block: scrollPos });
+                        phrases[i].scrollIntoView({ behavior: "smooth", block: "center" });
 
                         currentPhraseIndex = i;
                     }

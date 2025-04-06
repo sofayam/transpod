@@ -395,10 +395,6 @@ app.get("/chart", (req, res) => {
     res.render("chart", { listenList, totpod, tottime, layout: false })
 })
 
-app.get("/test", (req, res) => {
-    res.render("playtranspwa", { layout: false })
-})
-
 
 app.get("/recentListen", (req, res) => {
 
