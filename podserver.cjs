@@ -62,6 +62,11 @@ function getPods(forceAll = false) {
     return contents
 }
 
+app.get('/manifest.json', (req, res) => {
+    res.type('application/manifest+json');
+    res.sendFile(__dirname + '/manifest.json');
+});
+
 app.get("/", (req, res, next) => {
 
     let contents = getPods()
