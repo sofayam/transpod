@@ -49,6 +49,7 @@
 
         input[type="range"] {
             width: 100%;
+            padding: 12px;
         }
         
       .button-bar button {
@@ -268,12 +269,18 @@
 <body>
     <!-- Top button bar -->
     <div class="button-bar" id="audio-container">
-<div>
+        <div> <span id=podtitle2></span></div>
+            <div>
         <audio id="audio" controls>
             <source src="{{mp3file}}" type="audio/mpeg">
             Your browser does not support the audio element.
         </audio>
+        <div>
+     <button id="back">⬆️</button>  .............  <span id="timeDisplay">0:00 / 0:00</span> ............. <button id="top">⏫</button>
+     <p></p>
+    
             <input type="range" id="seekSlider" min="0" value="0" step="0.1" disabled>
+         </div>
         </div>
              <div>
 
@@ -297,10 +304,10 @@
     
     <!-- Bottom status display -->
     <div class="status-bar">
-            <div class="status-item" id="timeDisplay">0:00 / 0:00</div>
+          
 
 
-                    <span id=podtitle></span> [{{source}}]  <button id="back">⬆️</button> <button id="top">⏫</button>
+                    <span id=podtitle1></span> [{{source}}] 
         <div class="status-item">
             {{#if info.published}}
             <span>Published: {{info.published}}</span>
@@ -344,7 +351,8 @@
     let pptoggle = true
 
     const decodedTitle = decodeURIComponent("{{{mp3file}}}")
-        document.getElementById("podtitle").textContent = decodedTitle
+        document.getElementById("podtitle1").textContent = decodedTitle
+        document.getElementById("podtitle2").textContent = decodedTitle
         document.title = decodedTitle
 
         const audio = document.getElementById("audio");
