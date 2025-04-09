@@ -53,6 +53,19 @@
     </style>
 </head>
 <body>
+
+    <script>
+      window.onload = function(){
+      const topBtn = document.getElementById("top");
+      topBtn.addEventListener("click", () => {
+            localStorage.setItem("lastPage", "")
+            window.location.href = "/"
+        });
+      }
+    </script>
+
+    Return to podcast list: <button id="top">⏫</button>
+    
     <div class="container">
         <h1>Podcast Listening Tracker</h1>
         
