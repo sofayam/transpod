@@ -12,7 +12,7 @@ from addDuration import process_mp3
 
 
 # Function to download the latest podcast
-def download(rss_feed_url, download_folder, relative, first, last, transcribeAsWell, sync, dryrun):
+def download(rss_feed_url, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun):
     # Parse the RSS feed
 
     podcatch = False
@@ -52,6 +52,9 @@ def download(rss_feed_url, download_folder, relative, first, last, transcribeAsW
         # check if file already exists
         if os.path.exists(mp3path):
             print(mp3path, "already downloaded", file=sys.stderr)
+            if latest:
+                # exit loop if we are only looking for the latest
+                break
         else:
             # Download the episode
             headers = {
@@ -105,11 +108,15 @@ def parse_args():
     # "absolute" option: takes 1 or 2 int numbers
     group.add_argument("-a", "--absolute", nargs="+", type=int, help="Absolute mode: provide 1 or 2 integers.")
 
+    group.add_argument("-l", "--latest", help="download the latest episodes", action="store_true")
+
     parser.add_argument("-t", "--transcribe", help="Run transcribe on the downloaded files", action="store_true")
 
     parser.add_argument("-s", "--sync", help="sync to NAS with rsync", action="store_true")
 
     parser.add_argument("-d", "--dryrun", help="all talk and no action", action="store_true")
+
+
     
     args = parser.parse_args()
 
@@ -125,11 +132,13 @@ args = parse_args()
 feedfolder =getattr(args,'filename')
 relative = False
 offs = getattr(args, "relative")
-if offs:
+latest = getattr(args, "latest")
+if offs or latest:
     relative = True
 else:
     offs = getattr(args, "absolute")
-
+if latest:
+    offs = [0, 5]
 first = offs[0]
 if len(offs) > 1:
     last = offs[1]
@@ -141,4 +150,4 @@ rss_feed_url = conf["feed"]
 
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
-download(rss_feed_url, download_folder, relative, first, last, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"))
+download(rss_feed_url, download_folder, latest, relative, first, last, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"))
