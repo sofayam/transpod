@@ -138,7 +138,7 @@ if offs or latest:
 else:
     offs = getattr(args, "absolute")
 if latest:
-    offs = [0, 5]
+    offs = [1, 5]
 first = offs[0]
 if len(offs) > 1:
     last = offs[1]
