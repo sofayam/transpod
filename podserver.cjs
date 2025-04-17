@@ -372,6 +372,10 @@ function listenData() {
 
 }
 
+app.get("/seltest", (req, res) => {
+    res.render("seltest", {  layout: false })
+})
+
 app.get("/chart", (req, res) => {
     let {epList, times} = listenData();
 

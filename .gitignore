@@ -4,3 +4,4 @@ scratch.js
 **/.DS_Store
 tmp/
 __pycache__
+*.log

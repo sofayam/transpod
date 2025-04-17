@@ -10,6 +10,7 @@
     "express": "^4.18.2",
     "express-handlebars": "^8.0.1",
     "hbs": "^4.2.0",
-    "jsdom": "^26.0.0"
+    "jsdom": "^26.0.0",
+    "kuromoji.js": "^0.1.6"
   }
 }
