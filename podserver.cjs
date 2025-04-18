@@ -2,7 +2,9 @@ var express = require('express')
 var fs = require('fs')
 var path = require("path")
 var jsdom = require("jsdom")
+const { exec } = require('child_process');
 const { JSDOM } = jsdom
+
 
 var app = express()
 
@@ -418,6 +420,24 @@ app.get("/chart", (req, res) => {
     res.render("chart", { listenList, totpod, tottime, layout: false })
 })
 
+app.get("/getNew", (req, res) => {
+
+
+exec('ssh mark@air.local "ls -la"', (error, stdout, stderr) => {
+  // spawn shell to ssh over to mini and run the getNewpodcasts script
+  if (error) {
+    console.error(`SSH error: ${error.message}`);
+    return;
+  }
+  if (stderr) {
+    console.error(`SSH stderr: ${stderr}`);
+    return;
+  }
+  console.log(`SSH stdout:\n${stdout}`);
+  // redirect to the main page
+    res.redirect("/");  
+});
+})    
 
 app.get("/recentListen", (req, res) => {
 
