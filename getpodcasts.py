@@ -13,34 +13,87 @@ from addDuration import process_mp3
 
 # Function to download the latest podcast
 def download(rss_feed_url, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun):
-    # Parse the RSS feed
+    # Ensure the download folder exists
+    os.makedirs(download_folder, exist_ok=True)
 
-    podcatch = False
-    feed = parse(rss_feed_url)
+    # Get the name of the directory itself
+    folder_name = os.path.basename(download_folder)
+
+    # Path to store the last modified time or ETag
+    metadata_path = os.path.join(download_folder, "feed_metadata.json")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+
+    podcatch = False  # Flag to track if new episodes are downloaded
+
+    # Perform header check only if the latest flag is set
+    if latest:
+        # Load previous metadata if it exists
+        if os.path.exists(metadata_path):
+            with open(metadata_path, "r", encoding="utf-8") as meta_file:
+                metadata = json.load(meta_file)
+                if "Last-Modified" in metadata:
+                    headers["If-Modified-Since"] = metadata["Last-Modified"]
+                if "ETag" in metadata:
+                    headers["If-None-Match"] = metadata["ETag"]
+        else:
+            metadata = {}
+
+        # Make a HEAD request to check for changes
+        try:
+            response = requests.head(rss_feed_url, headers=headers, allow_redirects=False)
+            while response.status_code in (301, 302):
+                # Follow the redirect
+                rss_feed_url = response.headers.get("Location")
+                print(f"[{folder_name}] Redirected to: {rss_feed_url}", file=sys.stderr)
+                response = requests.head(rss_feed_url, headers=headers, allow_redirects=False)
+
+            if response.status_code == 304:
+                print(f"[{folder_name}] No changes detected in the RSS feed since the last check.", file=sys.stderr)
+                return
+            elif response.status_code != 200:
+                print(f"[{folder_name}] Failed to fetch the RSS feed. HTTP Status Code: {response.status_code}", file=sys.stderr)
+                return
+
+            # Update metadata with the latest headers
+            if "Last-Modified" in response.headers:
+                metadata["Last-Modified"] = response.headers["Last-Modified"]
+            if "ETag" in response.headers:
+                metadata["ETag"] = response.headers["ETag"]
+
+            # Save updated metadata
+            with open(metadata_path, "w", encoding="utf-8") as meta_file:
+                json.dump(metadata, meta_file, ensure_ascii=False, indent=4)
+
+        except requests.exceptions.RequestException as e:
+            print(f"[{folder_name}] Error making HEAD request: {e}", file=sys.stderr)
+            return
+
+    # Parse the RSS feed
+    try:
+        feed = parse(rss_feed_url)
+    except Exception as e:
+        print(f"[{folder_name}] Error parsing RSS feed: {e}", file=sys.stderr)
+        return
 
     # Check if the feed has entries
     if not feed.entries:
-        print("No episodes found in the RSS feed.", file=sys.stderr)
+        print(f"[{folder_name}] No episodes found in the RSS feed.", file=sys.stderr)
         return
     else:
-        print(len(feed.entries), " Entries in total", file=sys.stderr)
+        print(f"[{folder_name}] {len(feed.entries)} Entries in total", file=sys.stderr)
 
-    # Get the latest episode
-
+    # Get the episodes
     if relative:
         entries = feed.entries
     else:
         entries = sorted(feed.entries, key=lambda e: e.get("published_parsed"))
 
-    
-
-    for idx in range(first-1, last):    
+    for idx in range(first - 1, last):
         latest_episode = entries[idx]
         episode_title = latest_episode.title
         media_url = latest_episode.enclosures[0].href  # Get the media URL from the 'enclosures'
-
-        # Ensure the download folder exists
-        os.makedirs(download_folder, exist_ok=True)
 
         file_base = episode_title.replace(" ", "_").replace("/", "_").replace(":", "_").replace("'", "_").replace('"', "_")
         mp3name = file_base + ".mp3"
@@ -49,47 +102,49 @@ def download(rss_feed_url, download_folder, latest, relative, first, last, trans
         mp3path = os.path.join(download_folder, mp3name)
         infopath = os.path.join(download_folder, infoname)
 
-        # check if file already exists
+        # Check if file already exists
         if os.path.exists(mp3path):
-            print(mp3path, "already downloaded", file=sys.stderr)
+            print(f"[{folder_name}] {mp3path} already downloaded", file=sys.stderr)
             if latest:
-                # exit loop if we are only looking for the latest
                 break
         else:
             # Download the episode
-            headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-}
+            print(f"[{folder_name}] Downloading: {episode_title}", file=sys.stderr)
+            try:
+                response = requests.get(media_url, headers=headers, stream=True, allow_redirects=True)
+            except requests.exceptions.RequestException as e:
+                print(f"[{folder_name}] Error downloading episode: {e}", file=sys.stderr)
+                continue
 
-
-            print(f"Downloading: {episode_title}", file=sys.stderr)
-            response = requests.get(media_url, headers=headers, stream=True)
             if dryrun:
-                print("Dryrun: Not downloading")
+                print(f"[{folder_name}] Dryrun: Not downloading")
                 continue
             if response.status_code == 200:
                 with open(mp3path, "wb") as file:
                     for chunk in response.iter_content(chunk_size=1024):
                         file.write(chunk)
-                print(mp3path)
-                json.dump(latest_episode, open(infopath, "w", encoding='utf8'), ensure_ascii=False, indent=4)
+                print(f"[{folder_name}] {mp3path}")
+                json.dump(latest_episode, open(infopath, "w", encoding="utf8"), ensure_ascii=False, indent=4)
                 process_mp3(mp3path)
+                podcatch = True  # Mark that a new episode was downloaded
                 if transcribe:
                     if transcribeAsWell:
                         transcribe(mp3path)
                         if sync:
-                            podcatch = True
-                            print ("Marked for syncing to NAS")
+                            print(f"[{folder_name}] Marked for syncing to NAS")
                     else:
-                        print("Downloaded but did NOT transcribe", mp3path)
-               
+                        print(f"[{folder_name}] Downloaded but did NOT transcribe {mp3path}")
             else:
-                print(f"Failed to download the episode. HTTP Status Code: {response.status_code}", file=sys.stderr)
-    if podcatch:
-        print("syncing to NAS")
-        command = "rsync --exclude='*.meta' -avz --progress " + download_folder + "/ mark@rpm17.local:/volume1/data/languages/japanese/podcasts/" + download_folder
-        print(command)  
+                print(f"[{folder_name}] Failed to download the episode. HTTP Status Code: {response.status_code}", file=sys.stderr)
+
+    # Sync only if new episodes were downloaded
+    if sync and podcatch:
+        print(f"[{folder_name}] Syncing to NAS")
+        command = f"rsync --exclude='*.meta' -avz --progress {download_folder}/ mark@rpm17.local:/volume1/data/languages/japanese/podcasts/{folder_name}"
+        print(command)
         os.system(command)
+    elif sync:
+        print(f"[{folder_name}] No new episodes downloaded. Skipping sync.", file=sys.stderr)
 
 # Example usage
 
