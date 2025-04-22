@@ -41,7 +41,7 @@ app.set('view engine', 'hbs');
 app.use(express.json())
 
 function getPods(forceAll = false) {
-    
+
     let coresetOnly = readMetaGlobal().coresetOnly === "true"
     if (forceAll) {
         coresetOnly = false
@@ -75,12 +75,12 @@ app.get("/", (req, res, next) => {
     let pcData = []
     contents.forEach(file => {
         // console.log(file)
-            let meta = readMetaPod(file)
-            podEntry = { name: file, ...meta }
-            pcData.push(podEntry)
+        let meta = readMetaPod(file)
+        podEntry = { name: file, ...meta }
+        pcData.push(podEntry)
     })
     metaGlobal = readMetaGlobal()
-    res.render("podcasts", { pods: pcData, layout: false, coresetOnly: metaGlobal.coresetOnly})
+    res.render("podcasts", { pods: pcData, layout: false, coresetOnly: metaGlobal.coresetOnly })
 })
 
 function compareEpisode(ep1, ep2) {
@@ -95,9 +95,9 @@ function compareEpisode(ep1, ep2) {
 function readConfig(podName) {
     const configPath = path.join(__dirname, "content", podName, "_config.md");
     if (fs.existsSync(configPath)) {
-            returnVal = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-            return returnVal
-    } 
+        returnVal = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        return returnVal
+    }
     return {}
 }
 
@@ -119,7 +119,7 @@ app.get("/pod/:id", (req, res, next) => {
     let sortonpubdate = false
 
     sortonpubdate = hasSortInfo(podName)
-    
+
     contents.forEach(file => {
         // console.log(file)
         if (!(BADFILES.includes(file)))
@@ -169,7 +169,7 @@ app.get("/pod/:id", (req, res, next) => {
 
 function isUnfinished(podName, epName) {
     // console.log("isUnfinished", podName, epName)
-    
+
     meta = readMetaEp(podName, epName)
     return !meta.finished
 
@@ -211,12 +211,12 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     let info = {}
     if (fs.existsSync(infopath)) {
         info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
-    }   
+    }
 
     res.render("playtranspwa", {
         pod, mp3file: mp3name,
         transcript: transcripttext,
-        source: transcriptsrc, meta, nextep, 
+        source: transcriptsrc, meta, nextep,
         info,
         layout: false
     })
@@ -226,7 +226,7 @@ app.get("/play/:pod/:ep", (req, res, next) => {
 function comparePublishedParsed(a, b) {
     if (!a || !b) {
         return 0
-    }   
+    }
     for (let i = 0; i < a.length; i++) {
         if (a[i] !== b[i]) {
             return a[i] - b[i];
@@ -257,9 +257,9 @@ app.get("/recentPublish", (req, res) => {
 
                 let info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
                 if (info.published_parsed) {
-             
+
                     let barename = ep.slice(0, -5)
-               
+
                     let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), info, finished: !(isUnfinished(podName, barename)) }
                     epList.push(epentry)
                 }
@@ -278,23 +278,23 @@ app.get("/recentPublish", (req, res) => {
 })
 
 function parseTimeToSeconds(time) {
-      // Remove the leading colon if present
-      const cleanTime = time.startsWith(':') ? time.substring(1) : time;
-      
-      // Split the time string into parts
-      const parts = cleanTime.split(':').map(Number);
-      
-      // Handle different formats
-      var totalseconds = 0;
-      if (parts.length === 3) {
+    // Remove the leading colon if present
+    const cleanTime = time.startsWith(':') ? time.substring(1) : time;
+
+    // Split the time string into parts
+    const parts = cleanTime.split(':').map(Number);
+
+    // Handle different formats
+    var totalseconds = 0;
+    if (parts.length === 3) {
         // Format is HH:mm:ss
         const [hours, minutes, seconds] = parts;
         totalseconds = (hours * 3600) + (minutes * 60) + seconds;
-      } else if (parts.length === 2) {
+    } else if (parts.length === 2) {
         // Format is mm:ss
         const [minutes, seconds] = parts;
         totalseconds = (minutes * 60) + seconds;
-      }
+    }
     return totalseconds
 }
 
@@ -303,83 +303,83 @@ function formatSeconds(totalSeconds) {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    
+
     // Format with leading zeros and return with leading colon
     return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-} 
+}
 
 function addTimes(times) {
     // Initialize total seconds
     let totalSeconds = 0;
-    
+
     // Process each time string
-    times.forEach(time => 
-        totalSeconds += parseTimeToSeconds(time)  
+    times.forEach(time =>
+        totalSeconds += parseTimeToSeconds(time)
     );
-    
+
     // Convert total seconds back to HH:mm:ss format
-       return formatSeconds(totalSeconds) 
-     }
-  
+    return formatSeconds(totalSeconds)
+}
+
 
 function listenData() {
 
-        // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
-        let podPath = path.join(__dirname, "content")
+    // Get all podcast metadata, sort on timeLastOpened field, filter for unfinished
+    let podPath = path.join(__dirname, "content")
 
-        let contents = getPods(forceAll=true)
-        // for each podcast
-        let epList = []
-        contents.forEach(podName => {
-    
-            if (!(BADFILES.includes(podName))) {
-                let ppath = path.join(podPath, podName)
-    
-                let eps = fs.readdirSync(ppath, { withFileTypes: true })
-                    .filter(dirent => dirent.isFile() && dirent.name.endsWith('.meta'))
-                    .map(dirent => dirent.name);
-                eps.forEach(ep => {
-    
-                    let metapath = path.join(ppath, ep)
-    
-                    // get info file TODO
-                    let infopath = path.join(ppath, ep.slice(0, -5) + ".info")
-    
-                    let meta = JSON.parse(fs.readFileSync(metapath, 'utf-8'))
-    
-                    let info = {}
-                    if (fs.existsSync(infopath)) {
-                        info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
-                    } 
-    
-                    let barename = ep.slice(0, -5)
-                    let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), meta, info, finished: !(isUnfinished(podName, barename)) } 
-                    epList.push(epentry)
-                })
-            }
-        })
-        let times = []
-        epList.forEach(ep => {
-            if (ep.meta.finished) {
-                if (ep.info) {
-                    //  check if itunes_duration is present and is of type string
-                    if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
-                        times.push(ep.info.itunes_duration)   
-                    }
-                } 
-            }
-        })
+    let contents = getPods(forceAll = true)
+    // for each podcast
+    let epList = []
+    contents.forEach(podName => {
 
-    return {epList, times}
+        if (!(BADFILES.includes(podName))) {
+            let ppath = path.join(podPath, podName)
+
+            let eps = fs.readdirSync(ppath, { withFileTypes: true })
+                .filter(dirent => dirent.isFile() && dirent.name.endsWith('.meta'))
+                .map(dirent => dirent.name);
+            eps.forEach(ep => {
+
+                let metapath = path.join(ppath, ep)
+
+                // get info file TODO
+                let infopath = path.join(ppath, ep.slice(0, -5) + ".info")
+
+                let meta = JSON.parse(fs.readFileSync(metapath, 'utf-8'))
+
+                let info = {}
+                if (fs.existsSync(infopath)) {
+                    info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
+                }
+
+                let barename = ep.slice(0, -5)
+                let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), meta, info, finished: !(isUnfinished(podName, barename)) }
+                epList.push(epentry)
+            })
+        }
+    })
+    let times = []
+    epList.forEach(ep => {
+        if (ep.meta.finished) {
+            if (ep.info) {
+                //  check if itunes_duration is present and is of type string
+                if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
+                    times.push(ep.info.itunes_duration)
+                }
+            }
+        }
+    })
+
+    return { epList, times }
 
 }
 
 app.get("/seltest", (req, res) => {
-    res.render("seltest", {  layout: false })
+    res.render("seltest", { layout: false })
 })
 
 app.get("/chart", (req, res) => {
-    let {epList, times} = listenData();
+    let { epList, times } = listenData();
 
     let listenDays = {}
     let totpod = 0
@@ -395,12 +395,12 @@ app.get("/chart", (req, res) => {
                     let time = ep.info.itunes_duration
                     let seconds = parseTimeToSeconds(time)
                     totseconds += seconds
-                    let date = ep.meta.timeLastOpened.substring(0,10)
+                    let date = ep.meta.timeLastOpened.substring(0, 10)
                     if (listenDays[date]) {
                         listenDays[date].count++
                         listenDays[date].totalSeconds += seconds
                     } else {
-                        listenDays[date] = { date, count: 1, totalSeconds: seconds}
+                        listenDays[date] = { date, count: 1, totalSeconds: seconds }
                     }
                 }
             }
@@ -411,7 +411,7 @@ app.get("/chart", (req, res) => {
 
     listenList = []
     Object.keys(listenDays).sort().forEach(key => {
-        let entry = {date: key, count: listenDays[key].count, totalMinutes: listenDays[key].totalSeconds / 60}
+        let entry = { date: key, count: listenDays[key].count, totalMinutes: listenDays[key].totalSeconds / 60 }
         listenList.push(entry)
     })
 
@@ -423,29 +423,32 @@ app.get("/chart", (req, res) => {
 app.get("/getNew", (req, res) => {
 
 
-exec('ssh mark@air.local "ls -la"', (error, stdout, stderr) => {
-  // spawn shell to ssh over to mini and run the getNewpodcasts script
-  if (error) {
-    console.error(`SSH error: ${error.message}`);
-    return;
-  }
-  if (stderr) {
-    console.error(`SSH stderr: ${stderr}`);
-    return;
-  }
-  console.log(`SSH stdout:\n${stdout}`);
-  // redirect to the main page
-    res.redirect("/");  
-});
-})    
+    exec('ssh markandrew@mini.local "ls -la"', (error, stdout, stderr) => {
+
+        //    exec(`sshpass -p '${password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${user}@${host} "${command}"`, ...)
+
+        // spawn shell to ssh over to mini and run the getNewpodcasts script
+        if (error) {
+            console.error(`SSH error: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.error(`SSH stderr: ${stderr}`);
+            return;
+        }
+        console.log(`SSH stdout:\n${stdout}`);
+        // redirect to the main page
+        res.redirect("/");
+    });
+})
 
 app.get("/recentListen", (req, res) => {
 
-    let {epList, times} = listenData();
+    let { epList, times } = listenData();
 
     let totalTime = addTimes(times)
-     
-    
+
+
     epList = epList.filter(ep => ep.meta.timeLastOpened !== 0)
     epList.sort((a, b) => b.meta.timeLastOpened.localeCompare(a.meta.timeLastOpened))
 
@@ -468,7 +471,7 @@ function readMetaEp(pod, ep) {
 }
 
 
-function  readMetaPod(folderName) {
+function readMetaPod(folderName) {
     const metaPath = path.join(__dirname, "content", `${folderName}.meta`);
     if (fs.existsSync(metaPath)) {
         try {
@@ -481,10 +484,10 @@ function  readMetaPod(folderName) {
             console.error(`Error reading ${metaPath}:`, error);
         }
     }
-    return { order: "latest", show: "all" , coreset: "false"}; // Default values
+    return { order: "latest", show: "all", coreset: "false" }; // Default values
 }
 
-function  readMetaGlobal() {
+function readMetaGlobal() {
     const metaPath = path.join(__dirname, "content/_global.meta");
     if (fs.existsSync(metaPath)) {
         try {
@@ -505,7 +508,7 @@ function writeMetaEp(metaPath, finished, timeLastOpened, timeInPod) {
 
 function writeMetaPod(folderName, order, show, coreset) {
     const metaPath = path.join(__dirname, "content", `${folderName}.meta`);
-    const metaData = { order, show, coreset};
+    const metaData = { order, show, coreset };
 
     try {
         fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');
@@ -517,7 +520,7 @@ function writeMetaPod(folderName, order, show, coreset) {
 
 function writeMetaGlobal(coresetOnly) {
     const metaPath = path.join(__dirname, "content/_global.meta");
-    const metaData = { coresetOnly };  
+    const metaData = { coresetOnly };
     try {
         fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');
         console.log(`Updated global meta file: ${metaPath}`);

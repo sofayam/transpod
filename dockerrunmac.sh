@@ -1,1 +1,0 @@
-docker run -d -p 8099:8014 -v ./content:/app/content transpod
