@@ -42,9 +42,18 @@
             padding: 12px;
             background-color: #e3badf;
             display: flex;
-            justify-content: space-between; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 10;
+            flex-wrap: wrap; /* Allow wrapping if needed */
+            justify-content: center; /* Center-align all content */
+            align-items: center; /* Vertically center-align content */
+            gap: 8px; /* Add spacing between elements */
+        }
+
+        #podtitle2 {
+            flex: 1 1 100%; /* Make the title span the full width */
+            text-align: center; /* Center-align the text */
+            font-size: 1.2rem; /* Adjust font size for better visibility */
+            font-weight: bold; /* Make the title bold */
+            margin-bottom: 8px; /* Add spacing below the title */
         }
 
         input[type="range"] {
@@ -175,11 +184,29 @@
         @media (min-width: 601px) and (max-width: 1024px) {
             .button-bar {
                 padding: 12px 16px;
+                display: flex;
+                flex-wrap: wrap; /* Allow buttons to wrap to the next line if needed */
+                justify-content: space-between; /* Distribute buttons evenly */
+                align-items: center; /* Center-align buttons vertically */
+                gap: 8px; /* Add spacing between buttons */
             }
             
             .button-bar button {
-                padding: 8px 16px;
-                font-size: 1rem;
+                padding: 8px 12px; /* Adjust padding for better spacing */
+                font-size: 0.9rem; /* Slightly larger font size for readability */
+                min-width: 70px; /* Ensure buttons are wide enough */
+                flex: 1; /* Allow buttons to grow and fill available space */
+                max-width: 120px; /* Prevent buttons from becoming too wide */
+            }
+            
+            #audio-container audio {
+                width: 100%; /* Make the audio player span the full width */
+                margin-bottom: 8px; /* Add spacing below the audio player */
+            }
+            
+            #seekSlider {
+                width: 100%; /* Ensure the slider spans the full width */
+                margin-top: 8px; /* Add spacing above the slider */
             }
             
             .content-area {
