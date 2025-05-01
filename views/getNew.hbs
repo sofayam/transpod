@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get New Podcasts</title>
+</head>
+<body>
+    <h1>Get New Podcasts</h1>
+    <button id="runScriptButton">Do It!</button>
+     <button id="home">Home</button>
+    <pre id="output" style="background: #f4f4f4; padding: 10px; border: 1px solid #ddd; max-height: 400px; overflow-y: auto;"></pre>
+
+    <script>
+        document.getElementById('home').addEventListener('click', () => {
+            window.location.href = '/';
+        });
+        document.getElementById('runScriptButton').addEventListener('click', () => {
+            const outputElement = document.getElementById('output');
+            outputElement.textContent = 'Starting script...\n';
+
+            // Fetch the /proxy-getnew endpoint
+            fetch('/getNew')
+                .then(response => {
+                    if (!response.body) {
+                        throw new Error('ReadableStream not supported in this browser.');
+                    }
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+
+                    // Read the stream
+                    function readStream() {
+                        reader.read().then(({ done, value }) => {
+                            if (done) {
+                                outputElement.textContent += '\nScript finished.';
+                                return;
+                            }
+
+                            // Decode and append the chunk to the output
+                            outputElement.textContent += decoder.decode(value);
+                            outputElement.scrollTop = outputElement.scrollHeight; // Auto-scroll to the bottom
+                            readStream();
+                        });
+                    }
+
+                    readStream();
+                })
+                .catch(error => {
+                    outputElement.textContent += `\nError: ${error.message}`;
+                });
+        });
+    </script>
+</body>
+</html>

@@ -5,6 +5,7 @@ conda activate transpod
 
 cd $HOME/repos/transpod
 
-./nightly.sh &> nightly$(date +"%Y_%m_%d_%I_%M_%p").log
+# ./nightly.sh &> nightly$(date +"%Y_%m_%d_%I_%M_%p").log
 
+./nightly.sh 
 

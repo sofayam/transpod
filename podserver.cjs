@@ -2,8 +2,8 @@ var express = require('express')
 var fs = require('fs')
 var path = require("path")
 var jsdom = require("jsdom")
-const { exec } = require('child_process');
 const { JSDOM } = jsdom
+const http = require('http');
 
 
 var app = express()
@@ -420,26 +420,43 @@ app.get("/chart", (req, res) => {
     res.render("chart", { listenList, totpod, tottime, layout: false })
 })
 
+const GETNEW_SERVER_URL = 'http://192.168.68.114:8015/getnew';
+
 app.get("/getNew", (req, res) => {
 
+    console.log('Proxying request to getnewserver...');
 
-    exec('ssh markandrew@mini.local "ls -la"', (error, stdout, stderr) => {
+    // Forward the request to the getnewserver
+    http.get(GETNEW_SERVER_URL, (getnewRes) => {
+        // Set the response headers
+        res.setHeader('Content-Type', 'text/plain');
 
-        //    exec(`sshpass -p '${password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${user}@${host} "${command}"`, ...)
+        // Stream the response from getnewserver to the browser
+        getnewRes.on('data', (chunk) => {
+            console.log(`Streaming chunk: ${chunk}`);
+            res.write(chunk);
+        });
 
-        // spawn shell to ssh over to mini and run the getNewpodcasts script
-        if (error) {
-            console.error(`SSH error: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.error(`SSH stderr: ${stderr}`);
-            return;
-        }
-        console.log(`SSH stdout:\n${stdout}`);
-        // redirect to the main page
-        res.redirect("/");
+        // End the response when the getnewserver finishes
+        getnewRes.on('end', () => {
+            console.log('Finished streaming from getnewserver.');
+            res.end();
+        });
+
+        // Handle errors from getnewserver
+        getnewRes.on('error', (err) => {
+            console.error(`Error from getnewserver: ${err.message}`);
+            res.status(500).end(`Error: ${err.message}`);
+        });
+    }).on('error', (err) => {
+        console.error(`Error connecting to getnewserver: ${err.message}`);
+        res.status(500).end(`Error: ${err.message}`);
     });
+
+})
+
+app.get("/showGetNew", (req, res) => {
+    res.render("getNew", { layout: false })
 })
 
 app.get("/recentListen", (req, res) => {
