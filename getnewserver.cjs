@@ -4,6 +4,7 @@ const express = require('express');
 const { spawn } = require('child_process');
 const path = require('path');
 const http = require('http');
+const fs = require('fs');  
 
 // Configuration
 const PORT = 8015;
@@ -124,6 +125,22 @@ app.get('/getnew', (req, res) => {
     // Execute the script
     executeScript(res);
 });
+
+app.get('/log', (req, res) => {
+    const logFilePath = path.join(__dirname, 'podcatch.log');
+    // send the first n lines of the log file
+    const n = 20; // number of lines to send
+ 
+    fs.readFile(logFilePath, 'utf8', (err, data) => {
+        if (err) {
+            console.error(`Error reading log file: ${err.message}`);
+            res.status(500).send('Error reading log file');
+            return;
+        }
+        const lines = data.split('\n').slice(-n).join('\n'); // Get the last n lines
+        res.send(lines);
+    });
+})
 
 // Start the server
 app.listen(PORT, () => {
