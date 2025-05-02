@@ -70,6 +70,18 @@ function triggerScriptIfNeeded() {
  * @param {object} res - The Express response object.
  */
 function executeScript(res) {
+    // append the current date and time to the script execution log in podcatch.log
+    const logFilePath = path.join(__dirname, 'podcatch.log');   
+    const currentDateTime = new Date().toISOString();
+    const logMessage = `Check for new episodes at ${currentDateTime}\n`;
+    require('fs').appendFile(logFilePath, logMessage, (err) => {
+        if (err) {
+            console.error(`Error writing to log file: ${err.message}`);
+        } else {
+            console.log(`Log message written to ${logFilePath}`);
+        }
+    });
+
     console.log('Executing script...');
     const process = spawn('zsh', [SCRIPT_PATH]);
 

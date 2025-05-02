@@ -8,7 +8,16 @@ import json
 import sys
 from transcribefast import transcribe
 from addDuration import process_mp3
+import datetime
 
+logfile = "podcatch.log"
+
+def logdownload(podcast, episode_title):
+    # write an entry to the end of the log file (create if it doesn't exist)
+    # showing the date and time, the podcast name, and the episode title   
+    with open(logfile, "a", encoding="utf-8") as log:
+        log.write(f"download [{podcast}] '{episode_title}' on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        log.flush()
 
 
 # Function to download the latest podcast
@@ -126,6 +135,7 @@ def download(rss_feed_url, download_folder, latest, relative, first, last, trans
                 print(f"[{folder_name}] {mp3path}")
                 json.dump(latest_episode, open(infopath, "w", encoding="utf8"), ensure_ascii=False, indent=4)
                 process_mp3(mp3path)
+                logdownload(folder_name, episode_title)
                 podcatch = True  # Mark that a new episode was downloaded
                 if transcribe:
                     if transcribeAsWell:
