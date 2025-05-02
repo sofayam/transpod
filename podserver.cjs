@@ -420,7 +420,7 @@ app.get("/chart", (req, res) => {
     res.render("chart", { listenList, totpod, tottime, layout: false })
 })
 
-const GETNEW_SERVER_URL = 'http://192.168.68.114:8015/getnew';
+const GETNEW_SERVER_URL = 'http://192.168.68.101:8015/getnew';
 
 app.get("/getNew", (req, res) => {
 
