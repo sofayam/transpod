@@ -1,21 +1,76 @@
-// This is a Node.js server that waits for a request and then calls the nightly.sh script in the correct environment
+// This is a Node.js server that waits for a request and then calls the getnewpodcasts.sh script in the correct environment
 
 const express = require('express');
 const { spawn } = require('child_process');
 const path = require('path');
+const http = require('http');
 
-// Define the port and script path
+// Configuration
 const PORT = 8015;
 const SCRIPT_PATH = path.join(__dirname, 'getnewpodcasts.sh');
+const DEFAULT_DELAY = 6 * 60 * 60 * 1000; // Default delay duration in milliseconds 
+
+// State
+let lastAccessTime = null;
 
 // Create an Express app
 const app = express();
 
-// Route to execute the script
-app.get('/getnew', (req, res) => {
-    console.log('Received request to run nightly script');
+/**
+ * Get the delay duration for the next script run.
+ * @returns {number} The delay in milliseconds.
+ */
+function getDelayDuration() {
+    return DEFAULT_DELAY; // This can be replaced with dynamic logic if needed in the future
+}
 
-    // Spawn the process to execute the script
+/**
+ * Calculate the remaining delay until the next script run.
+ * @returns {number} The remaining delay in milliseconds.
+ */
+function calculateRemainingDelay() {
+    const now = Date.now();
+    if (!lastAccessTime) {
+        return 0; // Run immediately if no previous access time
+    }
+    const elapsed = now - lastAccessTime;
+    return Math.max(getDelayDuration() - elapsed, 0); // Wait for the remaining time
+}
+
+/**
+ * Schedule the next script run.
+ */
+function scheduleNextRun() {
+    const delay = calculateRemainingDelay();
+    console.log(`Next script run scheduled in ${(delay / (60 * 60 * 1000)).toFixed(2)} hours.`);
+    setTimeout(() => {
+        triggerScriptIfNeeded();
+        scheduleNextRun(); // Schedule the next run after this one
+    }, delay);
+}
+
+/**
+ * Trigger the script if the delay duration has passed.
+ */
+function triggerScriptIfNeeded() {
+    const now = Date.now();
+    if (!lastAccessTime || now - lastAccessTime >= getDelayDuration()) {
+        const currentDateTime = new Date().toISOString();
+        console.log(`The delay duration has passed since the last call. Triggering script automatically at ${currentDateTime}.`);
+        http.get(`http://localhost:${PORT}/getnew`, (res) => {
+            console.log(`Self-triggered script response status: ${res.statusCode}`);
+        }).on('error', (err) => {
+            console.error(`Error self-triggering script: ${err.message}`);
+        });
+    }
+}
+
+/**
+ * Execute the script and stream its output to the response.
+ * @param {object} res - The Express response object.
+ */
+function executeScript(res) {
+    console.log('Executing script...');
     const process = spawn('zsh', [SCRIPT_PATH]);
 
     // Set response headers for streaming
@@ -23,13 +78,13 @@ app.get('/getnew', (req, res) => {
 
     // Stream stdout to the response
     process.stdout.on('data', (data) => {
-        console.log(`Script output: ${data}`);
+        // console.log(`Script output: ${data}`);
         res.write(data);
     });
 
     // Stream stderr to the response
     process.stderr.on('data', (data) => {
-        console.error(`${data}`);
+        // console.error(`${data}`);
         res.write(`${data}`);
     });
 
@@ -44,11 +99,24 @@ app.get('/getnew', (req, res) => {
         console.error(`Error spawning process: ${error.message}`);
         res.status(500).end(`Error: ${error.message}`);
     });
+}
+
+// Route to execute the script
+app.get('/getnew', (req, res) => {
+    const currentDateTime = new Date().toISOString();
+    console.log(`Received request to run the script at ${currentDateTime}.`);
+
+    // Update the last access time
+    lastAccessTime = Date.now();
+
+    // Execute the script
+    executeScript(res);
 });
 
 // Start the server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Podcast update server running on http://localhost:${PORT}`);
+    scheduleNextRun(); // Start the scheduling process
 });
 
 
