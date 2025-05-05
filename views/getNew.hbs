@@ -9,6 +9,15 @@
     <h1>Get New Podcasts</h1>
     <button id="runScriptButton">Do It!</button>
      <button id="home">Home</button>
+
+     <hr>
+         <ul id="logList" style="background: #f4f4f4; padding: 10px; border: 1px solid #ddd; max-height: 300px; overflow-y: auto; list-style-type: disc;">
+       {{#each logLines}}
+            <li>{{this}}</li>
+        {{/each}}
+    </ul>
+
+    <hr>     
     <pre id="output" style="background: #f4f4f4; padding: 10px; border: 1px solid #ddd; max-height: 400px; overflow-y: auto;"></pre>
 
     <script>

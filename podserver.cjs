@@ -456,7 +456,32 @@ app.get("/getNew", (req, res) => {
 })
 
 app.get("/showGetNew", (req, res) => {
-    res.render("getNew", { layout: false })
+
+    // get the log from the getnewserver by calling the log endpoint
+    const LOG_SERVER_URL = 'http://192.168.68.101:8015/log';
+    console.log('Proxying request to getnewserver...');     
+    // Forward the request to the getnewserver
+    http.get(LOG_SERVER_URL, (getnewRes) => {
+        // get the log text into a string
+        let logText = '';
+        getnewRes.on('data', (chunk) => {
+            logText += chunk;
+        });
+        // End the response when the getnewserver finishes
+        getnewRes.on('end', () => {
+            console.log('Finished streaming from getnewserver.');
+            const logLines = logText.split('\n').filter(line => line.trim() !== '');
+            res.render("getNew", { logLines, layout: false })
+        });
+        // Handle errors from getnewserver
+        getnewRes.on('error', (err) => {
+            console.error(`Error from getnewserver: ${err.message}`);
+            res.status(500).end(`Error: ${err.message}`);
+        }); 
+        
+
+    });
+
 })
 
 app.get("/recentListen", (req, res) => {
