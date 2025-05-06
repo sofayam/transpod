@@ -492,9 +492,11 @@ app.get("/showGetNew", (req, res) => {
             console.error(`Error from getnewserver: ${err.message}`);
             res.status(500).end(`Error: ${err.message}`);
         }); 
-        
+    }).on('error', (err) => {
+        console.error(`Error connecting to getnewserver: ${err.message}`);
+        res.status(500).end(`Error: ${err.message}`);
+    });
 
-    })
     request.setTimeout(10000, () => { // Timeout after 10 seconds
         console.error('Request timed out.');
         res.status(500).end('Error: Request timed out.');
