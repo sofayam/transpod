@@ -13,6 +13,11 @@ var PORT = 8014
 var orderList = null
 var feedOrderDict = null
 
+const mini = "192.168.68.101"
+
+const LOG_SERVER_URL = 'http://' + mini + ':8015/log';
+const GETNEW_SERVER_URL = 'http://' + mini + ':8015/getnew';
+
 if (process.argv.length > 2) {
     PORT = parseInt(process.argv[2])
 }
@@ -420,7 +425,7 @@ app.get("/chart", (req, res) => {
     res.render("chart", { listenList, totpod, tottime, layout: false })
 })
 
-const GETNEW_SERVER_URL = 'http://192.168.68.101:8015/getnew';
+
 
 app.get("/getNew", (req, res) => {
     const currentDateTime = new Date().toISOString(); // Get the current date and time
@@ -430,7 +435,7 @@ app.get("/getNew", (req, res) => {
 
 
     // Forward the request to the getnewserver
-    http.get(GETNEW_SERVER_URL, (getnewRes) => {
+    const request = http.get(GETNEW_SERVER_URL, (getnewRes) => {
         // Set the response headers
         res.setHeader('Content-Type', 'text/plain');
 
@@ -456,16 +461,21 @@ app.get("/getNew", (req, res) => {
         console.error(`Error connecting to getnewserver: ${err.message}`);
         res.status(500).end(`Error: ${err.message}`);
     });
+    request.setTimeout(10000, () => { // Timeout after 10 seconds
+        console.error('Request timed out.');
+        res.status(500).end('Error: Request timed out.');
+        request.abort(); // Abort the request
+    });
 
 })
 
 app.get("/showGetNew", (req, res) => {
 
     // get the log from the getnewserver by calling the log endpoint
-    const LOG_SERVER_URL = 'http://192.168.68.101:8015/log';
+   
     console.log('Proxying request to getnewserver...');     
     // Forward the request to the getnewserver
-    http.get(LOG_SERVER_URL, (getnewRes) => {
+    const request = http.get(LOG_SERVER_URL, (getnewRes) => {
         // get the log text into a string
         let logText = '';
         getnewRes.on('data', (chunk) => {
@@ -484,7 +494,14 @@ app.get("/showGetNew", (req, res) => {
         }); 
         
 
+    })
+    request.setTimeout(10000, () => { // Timeout after 10 seconds
+        console.error('Request timed out.');
+        res.status(500).end('Error: Request timed out.');
+        request.abort(); // Abort the request
     });
+
+
 
 })
 
