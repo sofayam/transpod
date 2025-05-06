@@ -6,11 +6,17 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = fs.promises;
 
+
+const HOURDELAY = 12
+const LOGLINES = 40; // Number of lines to read from the log file
+
 // Configuration
 const PORT = 8015;
 const SCRIPT_PATH = path.join(__dirname, 'getnewpodcasts.sh');
-const DEFAULT_DELAY = 6 * 60 * 60 * 1000; // Default delay duration in milliseconds (6 hours)
+
+const DEFAULT_DELAY = HOURDELAY * 60 * 60 * 1000; // Default delay duration in milliseconds (6 hours)
 const LOG_FILE_PATH = path.join(__dirname, 'podcatch.log');
+
 
 // State
 let lastAccessTime = null;
@@ -72,7 +78,10 @@ function scheduleNextRun() {
  * Execute the script and return its output
  * @returns {Promise<string>} The script output
  */
-async function runScript() {
+
+// TBD add res as an optional parameter and, if it exists, use it to stream the output to the client
+
+async function runScript(res = null) {
     if (scriptRunning) {
         return "Script already running. Try again later.";
     }
@@ -98,17 +107,21 @@ async function runScript() {
           
             const process = spawn('zsh', [SCRIPT_PATH]);
             
-            let output = '';
-            let errorOutput = '';
-            
             // Collect stdout
             process.stdout.on('data', (data) => {
-                output += data.toString();
+                if (res)
+                    res.write(data.toString());
+                else
+                    console.log(data.toString());
+
             });
             
             // Collect stderr
             process.stderr.on('data', (data) => {
-                errorOutput += data.toString();
+                if (res)
+                    res.write(data.toString());
+                else
+                    console.log(data.toString());
             });
             
             // Handle process exit
@@ -117,7 +130,7 @@ async function runScript() {
                 scriptRunning = false;
                 
                 if (code === 0) {
-                    resolve(output + (errorOutput ? `\nStderr: ${errorOutput}` : ''));
+                    resolve();
                 } else {
                     reject(new Error(`Process failed with exit code ${code}. Error: ${errorOutput}`));
                 }
@@ -150,9 +163,8 @@ app.get('/getnew', async (req, res) => {
     
     try {
         // Execute the script
-        res.setHeader('Content-Type', 'text/plain');
-        const output = await runScript();
-        res.send(output);
+        await runScript(res);
+        res.end(); // End the response if streaming
     } catch (error) {
         console.error(`Error running script: ${error.message}`);
         res.status(500).send(`Error: ${error.message}`);
@@ -161,7 +173,7 @@ app.get('/getnew', async (req, res) => {
 
 app.get('/log', async (req, res) => {
     try {
-        const n = parseInt(req.query.lines) || 20; // Number of lines to send, default to 20
+        const n = parseInt(req.query.lines) || LOGLINES; // Number of lines to send, default to 20
         
         const data = await fsPromises.readFile(LOG_FILE_PATH, 'utf8');
         const lines = data.split('\n').slice(-n).join('\n'); // Get the last n lines

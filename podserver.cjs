@@ -423,8 +423,11 @@ app.get("/chart", (req, res) => {
 const GETNEW_SERVER_URL = 'http://192.168.68.101:8015/getnew';
 
 app.get("/getNew", (req, res) => {
+    const currentDateTime = new Date().toISOString(); // Get the current date and time
+    console.log(`[${currentDateTime}] Proxying request to getnewserver...`);
 
-    console.log('Proxying request to getnewserver...');
+    console.log(`[${currentDateTime}] Proxying request to getnewserver...`);
+
 
     // Forward the request to the getnewserver
     http.get(GETNEW_SERVER_URL, (getnewRes) => {
@@ -439,7 +442,8 @@ app.get("/getNew", (req, res) => {
 
         // End the response when the getnewserver finishes
         getnewRes.on('end', () => {
-            console.log('Finished streaming from getnewserver.');
+            const currentDateTime = new Date().toISOString(); // Get the current date and time
+            console.log(`[${currentDateTime}] Finished streaming from getnewserver...`);
             res.end();
         });
 
