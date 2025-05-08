@@ -431,9 +431,6 @@ app.get("/getNew", (req, res) => {
     const currentDateTime = new Date().toISOString(); // Get the current date and time
     console.log(`[${currentDateTime}] Proxying request to getnewserver...`);
 
-    console.log(`[${currentDateTime}] Proxying request to getnewserver...`);
-
-
     // Forward the request to the getnewserver
     const request = http.get(GETNEW_SERVER_URL, (getnewRes) => {
         // Set the response headers
@@ -475,6 +472,7 @@ app.get("/showGetNew", (req, res) => {
    
     console.log('Proxying request to getnewserver...');     
     // Forward the request to the getnewserver
+    try {
     const request = http.get(LOG_SERVER_URL, (getnewRes) => {
         // get the log text into a string
         let logText = '';
@@ -490,18 +488,26 @@ app.get("/showGetNew", (req, res) => {
         // Handle errors from getnewserver
         getnewRes.on('error', (err) => {
             console.error(`Error from getnewserver: ${err.message}`);
-            res.status(500).end(`Error: ${err.message}`);
+            res.render("sulkingServer", { message: err.message, layout: false })
         }); 
     }).on('error', (err) => {
         console.error(`Error connecting to getnewserver: ${err.message}`);
-        res.status(500).end(`Error: ${err.message}`);
+        res.render("sulkingServer", { message: err.message,  layout: false })
+        // res.status(500).end(`Error: ${err.message}`);
     });
 
     request.setTimeout(10000, () => { // Timeout after 10 seconds
         console.error('Request timed out.');
-        res.status(500).end('Error: Request timed out.');
+        // res.status(500).end('Error: Request timed out.');
+        res.render("sulkingServer", {message : "Timed Out",  layout: false })
         request.abort(); // Abort the request
     });
+
+} catch (err) {
+    // Catch any unexpected errors and render the sulkingServer page
+    console.error(`Unexpected error: ${err.message}`);
+    res.render("sulkingServer", { message: err.message, layout: false });
+} 
 
 
 
