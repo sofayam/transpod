@@ -376,6 +376,8 @@
             let finished = {{ meta.finished }}
         
     let pptoggle = true
+    let lastTime = 0
+    const listenSecondsUpdateInterval = 10; // seconds
 
     const decodedTitle = decodeURIComponent("{{{mp3file}}}")
         document.getElementById("podtitle1").textContent = decodedTitle
@@ -650,6 +652,45 @@ audio.addEventListener("progress", () => {
                 .catch(error => console.error("Fetch error:", error));
 
         }
+
+        function audioChanged() 
+        {
+            const currentTime = audio.currentTime;
+            // store currentTime in persistent variable
+
+            // Check if the audio has changed
+            if (currentTime !== lastTime) {
+                lastTime = currentTime; // Update the last time
+                return true; // Audio has changed
+            }
+            return false; // Audio is not playing
+        }
+
+    // Function to call the update-time endpoint
+    function addListeningTime() {
+        const date = new Date().toISOString().split('T')[0]; // Get the current date in YYYY-MM-DD format
+        const podcastName = "{{pod}}"; // Use the current podcast name
+        const episodeName = "{{mp3file}}"; // Use the current episode name
+        
+        fetch(`/update-time?date=${date}&podcastName=${encodeURIComponent(podcastName)}&episodeName=${encodeURIComponent(episodeName)}&seconds=${listenSecondsUpdateInterval}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error(`Error updating time: ${data.message}`);
+                } else {
+                    console.log(`Time updated successfully for ${podcastName} - ${episodeName}`);
+                }
+            })
+            .catch(error => console.error("Fetch error:", error));
+    }
+
+    // Call updateTime every 10 seconds while the audio is playing
+    setInterval(() => {
+        if (audioChanged()) {
+            addListeningTime();
+        }
+    }, listenSecondsUpdateInterval * 1000); // Convert seconds to milliseconds
+
 });
 
 

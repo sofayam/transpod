@@ -4,3 +4,4 @@
 */*.json.txt
 */transcripts
 *.meta
+TIMEDATA.db

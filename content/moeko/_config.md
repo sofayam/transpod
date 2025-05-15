@@ -1,3 +1,4 @@
 {
-    "feed": "https://anchor.fm/s/102055200/podcast/rss"
+    "feed": "https://anchor.fm/s/102055200/podcast/rss",
+    "sortInfo": 1
 }

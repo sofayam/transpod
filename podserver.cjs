@@ -4,10 +4,9 @@ var path = require("path")
 var jsdom = require("jsdom")
 const { JSDOM } = jsdom
 const http = require('http');
-
+const sqlite3 = require('sqlite3').verbose();
 
 var app = express()
-
 
 var PORT = 8014
 var orderList = null
@@ -756,3 +755,104 @@ function parseTimestamp(timestamp) {
     const milliseconds = parseInt(parts[3], 10) || 0;
     return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
 }
+
+// Initialize SQLite database
+const db = new sqlite3.Database(path.join(__dirname, 'content', 'TIMEDATA.db'), (err) => {
+    if (err) {
+        console.error('Error opening database:', err.message);
+    } else {
+        console.log('Connected to SQLite database.');
+        db.run(`
+            CREATE TABLE IF NOT EXISTS podcast_time (
+                date TEXT NOT NULL,
+                podcast_name TEXT NOT NULL,
+                episode_name TEXT NOT NULL,
+                total_seconds INTEGER NOT NULL,
+                PRIMARY KEY (date, podcast_name, episode_name)
+            )
+        `, (err) => {
+            if (err) {
+                console.error('Error creating table:', err.message);
+            }
+        });
+    }
+});
+
+app.get('/initdbfrommeta', (req, res) => {
+    // initialize historical values in the database from the meta files
+    // using the values collected for the chart
+    let { epList, times } = listenData();
+
+    let listenDays = {}
+    let totpod = 0
+    let totseconds = 0
+
+    epList.forEach(ep => {
+        if (ep.meta.finished && ep.meta.timeLastOpened) {
+
+            if (ep.info) {
+                if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
+                    // get time of ep
+                    // {date: "2025-03-01", count: 2, totalMinutes: 70},
+                    let time = ep.info.itunes_duration
+                    let seconds = parseTimeToSeconds(time)
+                    let date = ep.meta.timeLastOpened.substring(0, 10)
+
+                    // create the db record
+                    const query = `
+                        INSERT INTO podcast_time (date, podcast_name, episode_name, total_seconds)
+                        VALUES (?, ?, ?, ?)
+                        ON CONFLICT(date, podcast_name, episode_name)
+                        DO UPDATE SET total_seconds = total_seconds + excluded.total_seconds
+                    `;
+                    db.run(query, [date, ep.pod, ep.name, seconds], function (err) {
+                        if (err) {
+                            console.error('Error inserting into database:', err.message);
+                        } else {
+                            console.log(`Inserted/Updated record for ${ep.pod} - ${ep.name} on ${date}`);
+                        }
+                    });
+                               
+                }
+            }
+        }
+    })
+})
+
+function extractFileNameWithoutExtension(path) {
+    // Split the path by '/' and get the last part (filename with extension)
+    const filenameWithExtension = path.split('/').pop();
+    
+    // Split the filename by '.' and get the part before the extension
+    const filenameWithoutExtension = filenameWithExtension.split('.')[0];
+    
+    return filenameWithoutExtension;
+  }
+
+app.get('/update-time', (req, res) => {
+    const { date, podcastName, episodeName, seconds } = req.query;
+
+    if (!date || !podcastName || !episodeName || !seconds) {
+        return res.status(400).json({ success: false, message: 'Missing required parameters.' });
+    }
+
+    const query = `
+        INSERT INTO podcast_time (date, podcast_name, episode_name, total_seconds)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(date, podcast_name, episode_name)
+        DO UPDATE SET total_seconds = total_seconds + excluded.total_seconds
+    `;
+
+    // decode the episode name
+    const decodedEpisodeName = decodeURIComponent(episodeName);
+    const episodeNameWithoutExtension = extractFileNameWithoutExtension(decodedEpisodeName);
+
+    db.run(query, [date, podcastName, episodeNameWithoutExtension, parseInt(seconds)], function (err) {
+        if (err) {
+            console.error('Error updating database:', err.message);
+            return res.status(500).json({ success: false, message: 'Database error.' });
+        }
+
+        res.json({ success: true, message: 'Time updated successfully.' });
+    });
+});
