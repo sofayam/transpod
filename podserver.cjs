@@ -382,47 +382,7 @@ app.get("/seltest", (req, res) => {
     res.render("seltest", { layout: false })
 })
 
-app.get("/chart", (req, res) => {
-    let { epList, times } = listenData();
 
-    let listenDays = {}
-    let totpod = 0
-    let totseconds = 0
-
-    epList.forEach(ep => {
-        if (ep.meta.finished && ep.meta.timeLastOpened) {
-            if (ep.info) {
-                if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
-                    // get time of ep
-                    // {date: "2025-03-01", count: 2, totalMinutes: 70},
-                    totpod += 1
-                    let time = ep.info.itunes_duration
-                    let seconds = parseTimeToSeconds(time)
-                    totseconds += seconds
-                    let date = ep.meta.timeLastOpened.substring(0, 10)
-                    if (listenDays[date]) {
-                        listenDays[date].count++
-                        listenDays[date].totalSeconds += seconds
-                    } else {
-                        listenDays[date] = { date, count: 1, totalSeconds: seconds }
-                    }
-                }
-            }
-        }
-    })
-
-    // convert listenDays to an array of objects with date, count, time
-
-    listenList = []
-    Object.keys(listenDays).sort().forEach(key => {
-        let entry = { date: key, count: listenDays[key].count, totalMinutes: listenDays[key].totalSeconds / 60 }
-        listenList.push(entry)
-    })
-
-    tottime = formatSeconds(totseconds)
-
-    res.render("chart", { listenList, totpod, tottime, layout: false })
-})
 
 
 
@@ -779,6 +739,10 @@ const db = new sqlite3.Database(path.join(__dirname, 'content', 'TIMEDATA.db'), 
 });
 
 app.get('/initdbfrommeta', (req, res) => {
+
+    // Probably not needed anymore (says the vibe code robot that wrote this)
+
+
     // initialize historical values in the database from the meta files
     // using the values collected for the chart
     let { epList, times } = listenData();
@@ -856,3 +820,77 @@ app.get('/update-time', (req, res) => {
         res.json({ success: true, message: 'Time updated successfully.' });
     });
 });
+
+app.get("/chartFromDB", (req, res) => {
+    const query = `
+        SELECT date, COUNT(*) AS count, SUM(total_seconds) AS totalSeconds
+        FROM podcast_time
+        GROUP BY date
+        ORDER BY date ASC
+    `;
+
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            console.error('Error querying database:', err.message);
+            return res.status(500).send('Database error.');
+        }
+
+        // Transform the data into the format expected by the chart.hbs template
+        const listenList = rows.map(row => ({
+            date: row.date,
+            count: row.count,
+            totalMinutes: row.totalSeconds / 60
+        }));
+
+        // Calculate total podcasts and total time
+        const totpod = rows.reduce((sum, row) => sum + row.count, 0);
+        const totseconds = rows.reduce((sum, row) => sum + row.totalSeconds, 0);
+        const tottime = formatSeconds(totseconds);
+
+        // Render the chart.hbs template
+        res.render("chart", { listenList, totpod, tottime, layout: false });
+    });
+});
+
+
+app.get("/legacyChartForSentimentalReasonsOnlyDoNotCallThis", (req, res) => {
+    let { epList, times } = listenData();
+
+    let listenDays = {}
+    let totpod = 0
+    let totseconds = 0
+
+    epList.forEach(ep => {
+        if (ep.meta.finished && ep.meta.timeLastOpened) {
+            if (ep.info) {
+                if (ep.info.itunes_duration && typeof ep.info.itunes_duration === 'string') {
+                    // get time of ep
+                    // {date: "2025-03-01", count: 2, totalMinutes: 70},
+                    totpod += 1
+                    let time = ep.info.itunes_duration
+                    let seconds = parseTimeToSeconds(time)
+                    totseconds += seconds
+                    let date = ep.meta.timeLastOpened.substring(0, 10)
+                    if (listenDays[date]) {
+                        listenDays[date].count++
+                        listenDays[date].totalSeconds += seconds
+                    } else {
+                        listenDays[date] = { date, count: 1, totalSeconds: seconds }
+                    }
+                }
+            }
+        }
+    })
+
+    // convert listenDays to an array of objects with date, count, time
+
+    listenList = []
+    Object.keys(listenDays).sort().forEach(key => {
+        let entry = { date: key, count: listenDays[key].count, totalMinutes: listenDays[key].totalSeconds / 60 }
+        listenList.push(entry)
+    })
+
+    tottime = formatSeconds(totseconds)
+
+    res.render("chart", { listenList, totpod, tottime, layout: false })
+})
