@@ -417,11 +417,11 @@ app.get("/getNew", (req, res) => {
         console.error(`Error connecting to getnewserver: ${err.message}`);
         res.status(500).end(`Error: ${err.message}`);
     });
-    request.setTimeout(10000, () => { // Timeout after 10 seconds
+/*     request.setTimeout(10000, () => { // Timeout after 10 seconds
         console.error('Request timed out.');
         res.status(500).end('Error: Request timed out.');
         request.abort(); // Abort the request
-    });
+    }); */
 
 })
 
