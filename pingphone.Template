@@ -1,0 +1,19 @@
+# pingphone.py is gitignored to stop leaking 
+# my pushover API key. Copy the code below and fix it with 
+# the correct API key and user key stored in kypass
+#
+
+import requests
+
+def send_notification(message, title="Notification from Mac"):
+    requests.post(
+        "https://api.pushover.net/1/messages.json",
+        data={
+            "token": "tokiedokie",  # Register for free on pushover.net
+            "user": "usieloosie",
+            "title": title,
+            "message": message
+        }
+    )
+
+send_notification("Your script has finished running!")
