@@ -100,6 +100,12 @@ def download(rss_feed_url, download_folder, latest, relative, first, last, trans
         entries = sorted(feed.entries, key=lambda e: e.get("published_parsed"))
 
     for idx in range(first - 1, last):
+        # check for the exisitence of a file called "STOP.FLAG" in the current directory
+        if os.path.exists("STOP.FLAG"):
+            print(f"[{folder_name}] STOP.FLAG file found. Stopping the download process.", file=sys.stderr)
+            # remove the STOP.FLAG file
+            os.remove("STOP.FLAG")
+            break
         latest_episode = entries[idx]
         episode_title = latest_episode.title
         media_url = latest_episode.enclosures[0].href  # Get the media URL from the 'enclosures'

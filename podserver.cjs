@@ -442,6 +442,8 @@ app.get("/showGetNew", (req, res) => {
         getnewRes.on('end', () => {
             console.log('Finished streaming from getnewserver.');
             const logLines = logText.split('\n').filter(line => line.trim() !== '');
+            // reverse the order of the log lines
+            logLines.reverse();
             res.render("getNew", { logLines, layout: false })
         });
         // Handle errors from getnewserver
