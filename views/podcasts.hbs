@@ -151,14 +151,16 @@ select {
 
 </div>
 <div class="link-container">
-        <select id="coreSetChoice">
+    <select id="coreSetChoice">
         <option value="false" {{#if (eq coresetOnly "false")}}selected{{/if}}>Fire Hose</option>
         <option value="true" {{#if (eq coresetOnly "true")}}selected{{/if}}>Core set only</option>
     </select>
+   
     <a href="/recentListen" class="styled-link">Recent listening</a>
     <a href="/recentPublish" class="styled-link">Recently Published</a>
     <a href="/chartFromDB" class="styled-link">Chart</a>
     <a href="/showGetNew" class="styled-link">Get new podcasts</a>
+     <button id="reset" class="styled-link" type="button">Reset</button>
 </div>
 
 <script>
@@ -210,7 +212,7 @@ select {
                 body: JSON.stringify({ name, order, show, coreset })
             })
                 .then(response => response.json())
-                .then(data => {
+                .then (data => {
                     if (!data.success) {
                         alert(`Error: ${data.message}`);
                     } else {
@@ -220,7 +222,28 @@ select {
                 .catch(error => console.error("Fetch error:", error));
         });
     });
-});
+
+        document.getElementById("reset").addEventListener("click", function () {
+            clearAppCache();
+        });
+
+async function clearAppCache() {
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(key => caches.delete(key)));
+    
+    if (navigator.serviceWorker.controller) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        await registration.unregister();
+      }
+    }
+    
+    location.reload();
+  }
+}
+
+    });
 </script>
   </body>
 </html>
