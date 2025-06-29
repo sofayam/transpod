@@ -63,6 +63,8 @@ function getPods(forceAll = false) {
     let podPath = path.join(__dirname, "content")
     let contents = fs.readdirSync(podPath, { withFileTypes: true })
         .filter(dirent => dirent.isDirectory())
+        // ignore @eaDir directories
+        .filter(dirent => !dirent.name.startsWith('@eaDir'))    
         .filter(pod => isCore(pod.name))
         .map(dirent => dirent.name)
     return contents
