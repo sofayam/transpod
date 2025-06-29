@@ -1,3 +1,23 @@
+# where to find new feeds
+
+listennotes.com
+
+
+# fugashi parser
+
+go here
+https://github.com/polm/fugashi?tab=readme-ov-file
+
+specifically:
+
+pip install 'fugashi[unidic-lite]'
+
+# The full version of UniDic requires a separate download step
+pip install 'fugashi[unidic]'
+python -m unidic download
+
+
+
 # stretch goals 
 Record user progress
 Organize into groups

@@ -1,17 +1,16 @@
-
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import mlx_whisper
 import json
-import sys
 import os
 import re
 import config
 import os.path
+import argparse
 
 
-def transcribe(infile: str):
+def transcribe(infile: str, lang: str):
 
     outfile = infile
 
@@ -24,14 +23,15 @@ def transcribe(infile: str):
     if outfile[:-5] != ".json":
         outfile += ".json"
 
-
     optionsmlx = {
-        "language": "ja",
-    #    "path_or_hf_repo": "mlx-community/whisper-medium-mlx-fp32",
-        "path_or_hf_repo": "mlx-community/whisper-large-v3-mlx",
-        "initial_prompt": "。、？！",
+            "language": "ja",
+            "path_or_hf_repo": "mlx-community/whisper-large-v3-mlx",
+            "initial_prompt": "。、？！",
+    } 
 
-    }
+    if lang != "ja":
+        optionsmlx["language"] = lang
+        optionsmlx["initial_prompt"] = ".,?!"
 
     # check for existence of transcipt and exit if found
 
@@ -80,14 +80,12 @@ def transcribe(infile: str):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Transcribe an mp3 file to JSON and TXT using mlx_whisper.")
+    parser.add_argument("mp3file", help="The mp3 file to transcribe (with or without .mp3 extension)")
+    parser.add_argument("--lang", default="ja", help="Language code (default: ja)")
+    args = parser.parse_args()
 
-    n = len(sys.argv)
+    infile = args.mp3file
+    lang = args.lang
 
-    if n == 1:
-            print (sys.argv[0], "Usage: ")
-            print ("<name(.mp3)> -> transcribes name.mp3 to name.json")
-            exit()
-
-    infile = sys.argv[1]
-
-    transcribe(infile)
+    transcribe(infile, lang)

@@ -21,7 +21,7 @@ def logdownload(podcast, episode_title):
 
 
 # Function to download the latest podcast
-def download(rss_feed_url, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun):
+def download(rss_feed_url, lang, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun):
     # Ensure the download folder exists
     os.makedirs(download_folder, exist_ok=True)
 
@@ -145,7 +145,7 @@ def download(rss_feed_url, download_folder, latest, relative, first, last, trans
                 podcatch = True  # Mark that a new episode was downloaded
                 if transcribe:
                     if transcribeAsWell:
-                        transcribe(mp3path)
+                        transcribe(mp3path, lang=lang)
                         if sync:
                             print(f"[{folder_name}] Marked for syncing to NAS")
                     else:
@@ -218,7 +218,8 @@ else:
 
 conf = config.getConfig(feedfolder)
 rss_feed_url = conf["feed"]
+lang = conf["lang"] or "ja"  # Default to Japanese if not specified in config
 
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
-download(rss_feed_url, download_folder, latest, relative, first, last, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"))
+download(rss_feed_url, lang, download_folder, latest, relative, first, last, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"))
