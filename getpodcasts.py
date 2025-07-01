@@ -218,7 +218,7 @@ else:
 
 conf = config.getConfig(feedfolder)
 rss_feed_url = conf["feed"]
-lang = conf["lang"] or "ja"  # Default to Japanese if not specified in config
+lang = conf.get("lang", "ja")   # Default to Japanese if not specified in config
 
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
