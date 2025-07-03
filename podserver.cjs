@@ -839,12 +839,39 @@ app.get("/chartFromDB", (req, res) => {
             return res.status(500).send('Database error.');
         }
 
-        // Transform the data into the format expected by the chart.hbs template
-        const listenList = rows.map(row => ({
-            date: row.date,
+        if (rows.length === 0) {
+            return res.render("chart", { listenList: [], totpod: 0, tottime: '0:00:00', layout: false });
+        }
+
+        // Create a map of dates to data for easy lookup
+        const dataMap = new Map(rows.map(row => [row.date, {
             count: row.count,
             totalMinutes: row.totalSeconds / 60
-        }));
+        }]));
+
+        // Get the start and end dates
+        const startDate = new Date(rows[0].date);
+        const endDate = new Date(rows[rows.length - 1].date);
+
+        const listenList = [];
+        // Iterate from start to end date, day by day
+        for (let d = startDate; d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dateString = d.toISOString().split('T')[0];
+            if (dataMap.has(dateString)) {
+                const data = dataMap.get(dateString);
+                listenList.push({
+                    date: dateString,
+                    count: data.count,
+                    totalMinutes: data.totalMinutes
+                });
+            } else {
+                listenList.push({
+                    date: dateString,
+                    count: 0,
+                    totalMinutes: 0
+                });
+            }
+        }
 
         // Calculate total podcasts and total time
         const totpod = rows.reduce((sum, row) => sum + row.count, 0);

@@ -104,6 +104,15 @@
                 <div class="stat-label">Total Time</div>
             </div>
         </div>
+
+        <div style="text-align:right; margin-bottom:10px;">
+            <label for="rangeSelect">Show: </label>
+            <select id="rangeSelect">
+                <option value="30">Last 30</option>
+                <option value="100">Last 100</option>
+                <option value="all" selected>All</option>
+            </select>
+        </div>
         
         <div class="chart-container">
             <canvas id="podcastChart"></canvas>
@@ -121,18 +130,32 @@
             },
             {{/each}} 
         ];
-        
+
+        let chartInstance = null;
+
+        function getTruncatedData(range) {
+            if (range === "all") return podcastData;
+            const n = parseInt(range, 10);
+            return podcastData.slice(-n);
+        }
+
         // Function to render the chart
-        function renderChart() {
+        function renderChart(range = "all") {
+            const dataToShow = getTruncatedData(range);
             const ctx = document.getElementById('podcastChart').getContext('2d');
             
             // Prepare chart data
-            const labels = podcastData.map(item => item.date);
-            const podcastCounts = podcastData.map(item => item.count);
-            const minutesTotals = podcastData.map(item => item.totalMinutes);
+            const labels = dataToShow.map(item => item.date);
+            const podcastCounts = dataToShow.map(item => item.count);
+            const minutesTotals = dataToShow.map(item => item.totalMinutes);
+
+            // Destroy previous chart if exists
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
             
             // Create the chart
-            const myChart = new Chart(ctx, {
+            chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -198,7 +221,14 @@
         }
         
         // Render chart when page loads
-        document.addEventListener('DOMContentLoaded', renderChart);
+        document.addEventListener('DOMContentLoaded', function() {
+            const rangeSelect = document.getElementById('rangeSelect');
+            renderChart(rangeSelect.value);
+
+            rangeSelect.addEventListener('change', function() {
+                renderChart(this.value);
+            });
+        });
     </script>
 </body>
 </html>
