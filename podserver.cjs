@@ -889,10 +889,11 @@ app.get("/chartFromDB", (req, res) => {
             // Get the start and end dates
             const startDate = new Date(rows[0].date);
             const endDate = new Date(rows[rows.length - 1].date);
+            endDate.setDate(endDate.getDate() + 1);
 
             const listenList = [];
             // Iterate from start to end date, day by day
-            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
                 const dateString = d.toISOString().split('T')[0];
                 if (dataMap.has(dateString)) {
                     const data = dataMap.get(dateString);
