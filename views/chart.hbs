@@ -106,12 +106,21 @@
         </div>
 
         <div style="text-align:right; margin-bottom:10px;">
-            <label for="rangeSelect">Show: </label>
-            <select id="rangeSelect">
-                <option value="30">Last 30</option>
-                <option value="100">Last 100</option>
-                <option value="all" selected>All</option>
-            </select>
+            <form action="/chartFromDB" method="get" id="filterForm">
+                <label for="language">Language:</label>
+                <select name="language" id="language" onchange="this.form.submit()">
+                    <option value="all">All</option>
+                    {{#each languages}}
+                    <option value="{{this.language}}" {{#if (eq this.language ../selectedLanguage)}}selected{{/if}}>{{this.language}}</option>
+                    {{/each}}
+                </select>
+                <label for="rangeSelect">Show: </label>
+                <select id="rangeSelect" name="range">
+                    <option value="30">Last 30</option>
+                    <option value="100">Last 100</option>
+                    <option value="all" selected>All</option>
+                </select>
+            </form>
         </div>
         
         <div class="chart-container">
@@ -223,6 +232,8 @@
         // Render chart when page loads
         document.addEventListener('DOMContentLoaded', function() {
             const rangeSelect = document.getElementById('rangeSelect');
+            const filterForm = document.getElementById('filterForm');
+
             renderChart(rangeSelect.value);
 
             rangeSelect.addEventListener('change', function() {

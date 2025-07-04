@@ -126,6 +126,9 @@ app.get("/pod/:id", (req, res, next) => {
 
     sortonpubdate = hasSortInfo(podName)
 
+    const config = readConfig(podName);
+    const lang = config.lang || 'ja';
+
     contents.forEach(file => {
         // console.log(file)
         if (!(BADFILES.includes(file)))
@@ -140,7 +143,7 @@ app.get("/pod/:id", (req, res, next) => {
                 }
                 epData.push({
                     podName, displayname: fname, encoded: encodeURIComponent(fname),
-                    finished: !(isUnfinished(podName, fname)), info
+                    finished: !(isUnfinished(podName, fname)), info, language: lang
                 })
 
             }
@@ -732,11 +735,21 @@ const db = new sqlite3.Database(path.join(__dirname, 'content', 'TIMEDATA.db'), 
                 podcast_name TEXT NOT NULL,
                 episode_name TEXT NOT NULL,
                 total_seconds INTEGER NOT NULL,
+                language TEXT NOT NULL DEFAULT 'ja',
                 PRIMARY KEY (date, podcast_name, episode_name)
             )
         `, (err) => {
             if (err) {
                 console.error('Error creating table:', err.message);
+            }
+        });
+        db.run(`ALTER TABLE podcast_time ADD COLUMN language TEXT DEFAULT 'ja'`, (err) => {
+            if (err) {
+                // ignore error if column already exists
+                if (err.message.includes('duplicate column name')) {
+                    return;
+                }
+                console.error('Error adding language column:', err.message);
             }
         });
     }
@@ -765,15 +778,17 @@ app.get('/initdbfrommeta', (req, res) => {
                     let time = ep.info.itunes_duration
                     let seconds = parseTimeToSeconds(time)
                     let date = ep.meta.timeLastOpened.substring(0, 10)
+                    const config = readConfig(ep.pod);
+                    const lang = config.lang || 'ja';
 
                     // create the db record
                     const query = `
-                        INSERT INTO podcast_time (date, podcast_name, episode_name, total_seconds)
-                        VALUES (?, ?, ?, ?)
+                        INSERT INTO podcast_time (date, podcast_name, episode_name, total_seconds, language)
+                        VALUES (?, ?, ?, ?, ?)
                         ON CONFLICT(date, podcast_name, episode_name)
                         DO UPDATE SET total_seconds = total_seconds + excluded.total_seconds
                     `;
-                    db.run(query, [date, ep.pod, ep.name, seconds], function (err) {
+                    db.run(query, [date, ep.pod, ep.name, seconds, lang], function (err) {
                         if (err) {
                             console.error('Error inserting into database:', err.message);
                         } else {
@@ -798,15 +813,15 @@ function extractFileNameWithoutExtension(path) {
   }
 
 app.get('/update-time', (req, res) => {
-    const { date, podcastName, episodeName, seconds } = req.query;
+    const { date, podcastName, episodeName, seconds, language } = req.query;
 
     if (!date || !podcastName || !episodeName || !seconds) {
         return res.status(400).json({ success: false, message: 'Missing required parameters.' });
     }
 
     const query = `
-        INSERT INTO podcast_time (date, podcast_name, episode_name, total_seconds)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO podcast_time (date, podcast_name, episode_name, total_seconds, language)
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(date, podcast_name, episode_name)
         DO UPDATE SET total_seconds = total_seconds + excluded.total_seconds
     `;
@@ -814,8 +829,13 @@ app.get('/update-time', (req, res) => {
     // decode the episode name
     const decodedEpisodeName = decodeURIComponent(episodeName);
     const episodeNameWithoutExtension = extractFileNameWithoutExtension(decodedEpisodeName);
+    let lang = language;
+    if (!lang) {
+        const config = readConfig(podcastName);
+        lang = config.lang || 'ja';
+    }
 
-    db.run(query, [date, podcastName, episodeNameWithoutExtension, parseInt(seconds)], function (err) {
+    db.run(query, [date, podcastName, episodeNameWithoutExtension, parseInt(seconds), lang], function (err) {
         if (err) {
             console.error('Error updating database:', err.message);
             return res.status(500).json({ success: false, message: 'Database error.' });
@@ -826,60 +846,88 @@ app.get('/update-time', (req, res) => {
 });
 
 app.get("/chartFromDB", (req, res) => {
-    const query = `
+    const selectedLanguage = req.query.language;
+
+    let query = `
         SELECT date, COUNT(*) AS count, SUM(total_seconds) AS totalSeconds
         FROM podcast_time
+    `;
+    const params = [];
+
+    if (selectedLanguage && selectedLanguage !== 'all') {
+        query += ' WHERE language = ?';
+        params.push(selectedLanguage);
+    }
+
+    query += `
         GROUP BY date
         ORDER BY date ASC
     `;
 
-    db.all(query, [], (err, rows) => {
+    db.all(query, params, (err, rows) => {
         if (err) {
             console.error('Error querying database:', err.message);
             return res.status(500).send('Database error.');
         }
 
-        if (rows.length === 0) {
-            return res.render("chart", { listenList: [], totpod: 0, tottime: '0:00:00', layout: false });
-        }
-
-        // Create a map of dates to data for easy lookup
-        const dataMap = new Map(rows.map(row => [row.date, {
-            count: row.count,
-            totalMinutes: row.totalSeconds / 60
-        }]));
-
-        // Get the start and end dates
-        const startDate = new Date(rows[0].date);
-        const endDate = new Date(rows[rows.length - 1].date);
-
-        const listenList = [];
-        // Iterate from start to end date, day by day
-        for (let d = startDate; d <= endDate; d.setDate(d.getDate() + 1)) {
-            const dateString = d.toISOString().split('T')[0];
-            if (dataMap.has(dateString)) {
-                const data = dataMap.get(dateString);
-                listenList.push({
-                    date: dateString,
-                    count: data.count,
-                    totalMinutes: data.totalMinutes
-                });
-            } else {
-                listenList.push({
-                    date: dateString,
-                    count: 0,
-                    totalMinutes: 0
-                });
+        db.all('SELECT DISTINCT language FROM podcast_time', [], (langErr, langs) => {
+            if (langErr) {
+                console.error('Error querying languages:', langErr.message);
+                return res.status(500).send('Database error.');
             }
+
+            if (rows.length === 0) {
+                return res.render("chart", { listenList: [], totpod: 0, tottime: '0:00:00', languages: langs, selectedLanguage, layout: false });
+            }
+
+            // Create a map of dates to data for easy lookup
+            const dataMap = new Map(rows.map(row => [row.date, {
+                count: row.count,
+                totalMinutes: row.totalSeconds / 60
+            }]));
+
+            // Get the start and end dates
+            const startDate = new Date(rows[0].date);
+            const endDate = new Date(rows[rows.length - 1].date);
+
+            const listenList = [];
+            // Iterate from start to end date, day by day
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                const dateString = d.toISOString().split('T')[0];
+                if (dataMap.has(dateString)) {
+                    const data = dataMap.get(dateString);
+                    listenList.push({
+                        date: dateString,
+                        count: data.count,
+                        totalMinutes: data.totalMinutes
+                    });
+                } else {
+                    listenList.push({
+                        date: dateString,
+                        count: 0,
+                        totalMinutes: 0
+                    });
+                }
+            }
+
+            // Calculate total podcasts and total time
+            const totpod = rows.reduce((sum, row) => sum + row.count, 0);
+            const totseconds = rows.reduce((sum, row) => sum + row.totalSeconds, 0);
+            const tottime = formatSeconds(totseconds);
+
+            // Render the chart.hbs template
+            res.render("chart", { listenList, totpod, tottime, languages: langs, selectedLanguage, layout: false });
+        });
+    });
+});
+
+app.get("/debug-db", (req, res) => {
+    db.all("SELECT * FROM podcast_time ORDER BY date DESC", [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ "error": err.message });
+            return;
         }
-
-        // Calculate total podcasts and total time
-        const totpod = rows.reduce((sum, row) => sum + row.count, 0);
-        const totseconds = rows.reduce((sum, row) => sum + row.totalSeconds, 0);
-        const tottime = formatSeconds(totseconds);
-
-        // Render the chart.hbs template
-        res.render("chart", { listenList, totpod, tottime, layout: false });
+        res.json(rows);
     });
 });
 
