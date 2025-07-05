@@ -73,14 +73,21 @@
     <h1>Choose an episode of {{pod}}</h1>
     <ul>
     {{#each eps}}
-        <div><li><a href="/play/{{../pod}}/{{encoded}}">   {{#if finished}}
-                    ✅
-                {{else}}
-                    🔴
-                {{/if}}
-        {{displayname}} [{{info.itunes_duration}}] </a> 
-                </div>
-        </li>
+        <div>
+          <li>
+            <a href="/play/{{../pod}}/{{encoded}}">
+              {{#if finished}}
+                ✅
+              {{else}}
+                🔴
+              {{/if}}
+              {{displayname}} [{{info.itunes_duration}}]
+            </a>
+            <div style="font-size: 13px; color: #888; margin-left: 2em;">
+              {{info.published}}
+            </div>
+          </li>
+        </div>
     {{/each}}
     </ul>
   </body>
