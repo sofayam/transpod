@@ -54,6 +54,19 @@
       a:hover, a:active {
         color: #004080;
       }
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        align-items: center;
+      }
+      .controls select {
+        padding: 6px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -64,13 +77,50 @@
             localStorage.setItem("lastPage", "")
             window.location.href = "/"
         });
+
+        const orderSelect = document.getElementById('order');
+        const showSelect = document.getElementById('show');
+        const podName = '{{pod}}';
+
+        orderSelect.addEventListener('change', updateMeta);
+        showSelect.addEventListener('change', updateMeta);
+
+        function updateMeta() {
+            const order = orderSelect.value;
+            const show = showSelect.value;
+
+            fetch('/update-meta-pod', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: podName, order, show, coreset: 'false' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error updating settings');
+                }
+            });
+        }
       }
     </script>
 
     Return to podcast list: <button id="top">⏫</button>
 
-
     <h1>Choose an episode of {{pod}}</h1>
+
+    <div class="controls">
+        <select id="order">
+            <option value="oldest" {{#if (eq meta.order "oldest")}}selected{{/if}}>Oldest First</option>
+            <option value="latest" {{#if (eq meta.order "latest")}}selected{{/if}}>Newest First</option>
+        </select>
+        <select id="show">
+            <option value="all" {{#if (eq meta.show "all")}}selected{{/if}}>Show All</option>
+            <option value="unfinished" {{#if (eq meta.show "unfinished")}}selected{{/if}}>Show Unfinished</option>
+        </select>
+    </div>
+
     <ul>
     {{#each eps}}
         <div>

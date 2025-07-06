@@ -159,7 +159,7 @@ app.get("/pod/:id", (req, res, next) => {
     // sort episodes
     if (sortonpubdate) {
         epData = epData.filter((item) => item.info.published_parsed) // mysterious bug on noriko sorting solved by this
-        epData.sort((a, b) => comparePublishedParsed(b.info.published_parsed, a.info.published_parsed))
+        epData.sort((a, b) => comparePublishedParsed(a.info.published_parsed, b.info.published_parsed))
     } else {
         epData.sort(compareEpisode)
     }
