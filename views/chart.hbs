@@ -96,10 +96,6 @@
         
         <div class="stats">
             <div class="stat-box">
-                <div class="stat-value" id="totalPodcasts">{{totpod}}</div>
-                <div class="stat-label">Total Podcasts</div>
-            </div>
-            <div class="stat-box">
                 <div class="stat-value" id="totalMinutes">{{tottime}}</div>
                 <div class="stat-label">Total Time</div>
             </div>
@@ -129,17 +125,8 @@
     </div>
 
     <script>
-        // Hardcoded podcast data
-        const podcastData = [
-            {{#each listenList}}
-            {
-                date: '{{this.date}}',
-                count: {{this.count}},
-                totalMinutes: {{this.totalMinutes}}
-            },
-            {{/each}} 
-        ];
-
+        const podcastData = {{{listenList}}};
+        const selectedLanguage = '{{selectedLanguage}}';
         let chartInstance = null;
 
         function getTruncatedData(range) {
@@ -148,94 +135,72 @@
             return podcastData.slice(-n);
         }
 
-        // Function to render the chart
         function renderChart(range = "all") {
             const dataToShow = getTruncatedData(range);
             const ctx = document.getElementById('podcastChart').getContext('2d');
             
-            // Prepare chart data
             const labels = dataToShow.map(item => item.date);
-            const podcastCounts = dataToShow.map(item => item.count);
-            const minutesTotals = dataToShow.map(item => item.totalMinutes);
+            
+            let datasets;
+            if (selectedLanguage === 'all') {
+                const languages = [...new Set(dataToShow.flatMap(d => Object.keys(d.languages)))];
+                const languageColors = {};
+                languages.forEach((lang, index) => {
+                    languageColors[lang] = `hsl(${(index * 60) % 360}, 70%, 50%)`;
+                });
 
-            // Destroy previous chart if exists
+                datasets = languages.map(lang => ({
+                    label: lang,
+                    data: dataToShow.map(d => d.languages[lang] || 0),
+                    backgroundColor: languageColors[lang],
+                }));
+            } else {
+                datasets = [{
+                    label: 'Total Minutes',
+                    data: dataToShow.map(item => item.totalMinutes),
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }];
+            }
+
             if (chartInstance) {
                 chartInstance.destroy();
             }
             
-            // Create the chart
             chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [
-                        {
-                            label: 'Number of Podcasts',
-                            data: podcastCounts,
-                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Total Minutes',
-                            data: minutesTotals,
-                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 1,
-                            type: 'line',
-                            yAxisID: 'y1'
-                        }
-                    ]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
                         x: {
+                            stacked: true,
                             title: {
                                 display: true,
                                 text: 'Date'
                             }
                         },
                         y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'Number of Podcasts'
-                            },
-                            min: 0,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
+                            stacked: true,
                             title: {
                                 display: true,
                                 text: 'Total Minutes'
                             },
-                            min: 0,
-                            grid: {
-                                drawOnChartArea: false
-                            }
+                            min: 0
                         }
                     }
                 }
             });
         }
         
-        // Render chart when page loads
         document.addEventListener('DOMContentLoaded', function() {
             const rangeSelect = document.getElementById('rangeSelect');
-            const filterForm = document.getElementById('filterForm');
-
             renderChart(rangeSelect.value);
-
             rangeSelect.addEventListener('change', function() {
                 renderChart(this.value);
             });

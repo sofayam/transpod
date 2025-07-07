@@ -849,7 +849,7 @@ app.get("/chartFromDB", (req, res) => {
     const selectedLanguage = req.query.language;
 
     let query = `
-        SELECT date, COUNT(*) AS count, SUM(total_seconds) AS totalSeconds
+        SELECT date, language, SUM(total_seconds) AS totalSeconds
         FROM podcast_time
     `;
     const params = [];
@@ -860,7 +860,7 @@ app.get("/chartFromDB", (req, res) => {
     }
 
     query += `
-        GROUP BY date
+        GROUP BY date, language
         ORDER BY date ASC
     `;
 
@@ -877,47 +877,28 @@ app.get("/chartFromDB", (req, res) => {
             }
 
             if (rows.length === 0) {
-                return res.render("chart", { listenList: [], totpod: 0, tottime: '0:00:00', languages: langs, selectedLanguage, layout: false });
+                return res.render("chart", { listenList: '[]', totpod: 0, tottime: '0:00:00', languages: langs, selectedLanguage, layout: false });
             }
 
-            // Create a map of dates to data for easy lookup
-            const dataMap = new Map(rows.map(row => [row.date, {
-                count: row.count,
-                totalMinutes: row.totalSeconds / 60
-            }]));
-
-            // Get the start and end dates
-            const startDate = new Date(rows[0].date);
-            const endDate = new Date(rows[rows.length - 1].date);
-            endDate.setDate(endDate.getDate() + 1);
-
-            const listenList = [];
-            // Iterate from start to end date, day by day
-            for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
-                const dateString = d.toISOString().split('T')[0];
-                if (dataMap.has(dateString)) {
-                    const data = dataMap.get(dateString);
-                    listenList.push({
-                        date: dateString,
-                        count: data.count,
-                        totalMinutes: data.totalMinutes
-                    });
-                } else {
-                    listenList.push({
-                        date: dateString,
-                        count: 0,
-                        totalMinutes: 0
-                    });
+            const dataByDate = {};
+            rows.forEach(row => {
+                if (!dataByDate[row.date]) {
+                    dataByDate[row.date] = {
+                        date: row.date,
+                        totalMinutes: 0,
+                        languages: {}
+                    };
                 }
-            }
+                dataByDate[row.date].languages[row.language] = row.totalSeconds / 60;
+                dataByDate[row.date].totalMinutes += row.totalSeconds / 60;
+            });
 
-            // Calculate total podcasts and total time
-            const totpod = rows.reduce((sum, row) => sum + row.count, 0);
+            const listenList = Object.values(dataByDate);
+
             const totseconds = rows.reduce((sum, row) => sum + row.totalSeconds, 0);
             const tottime = formatSeconds(totseconds);
 
-            // Render the chart.hbs template
-            res.render("chart", { listenList, totpod, tottime, languages: langs, selectedLanguage, layout: false });
+            res.render("chart", { listenList: JSON.stringify(listenList), tottime, languages: langs, selectedLanguage, layout: false });
         });
     });
 });
