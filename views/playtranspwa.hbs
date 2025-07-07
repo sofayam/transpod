@@ -399,12 +399,14 @@
         const finishBtn = document.getElementById("finished");
         const timeDisplay = document.getElementById("timeDisplay")
       
-       // fontSize = localStorage.getItem("fontSize")
-       // if fontSize == null || fontSize == undefined || fontSize == "NaN" || fontSize == "null") {
-            fontSize = 30
-       // } else {
-       //     fontSize = parseInt(fontSize)
-       // }
+       let storedFontSize = localStorage.getItem("fontSize");
+       let parsedSize = parseInt(storedFontSize, 10);
+
+       if (!isNaN(parsedSize) && parsedSize >= FONTMIN && parsedSize <= FONTMAX) {
+           fontSize = parsedSize;
+       } else {
+           fontSize = 30; // Default value
+       }
     
         setFontSize()
 
