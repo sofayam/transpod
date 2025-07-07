@@ -876,29 +876,54 @@ app.get("/chartFromDB", (req, res) => {
                 return res.status(500).send('Database error.');
             }
 
-            if (rows.length === 0) {
-                return res.render("chart", { listenList: '[]', totpod: 0, tottime: '0:00:00', languages: langs, selectedLanguage, layout: false });
-            }
-
-            const dataByDate = {};
-            rows.forEach(row => {
-                if (!dataByDate[row.date]) {
-                    dataByDate[row.date] = {
-                        date: row.date,
-                        totalMinutes: 0,
-                        languages: {}
-                    };
+            db.get('SELECT MIN(date) as minDate, MAX(date) as maxDate FROM podcast_time', [], (dateErr, dateRange) => {
+                if (dateErr) {
+                    console.error('Error querying date range:', dateErr.message);
+                    return res.status(500).send('Database error.');
                 }
-                dataByDate[row.date].languages[row.language] = row.totalSeconds / 60;
-                dataByDate[row.date].totalMinutes += row.totalSeconds / 60;
+
+                if (rows.length === 0) {
+                    return res.render("chart", { listenList: '[]', tottime: '0:00:00', languages: langs, selectedLanguage, layout: false });
+                }
+
+                const dataByDate = {};
+                rows.forEach(row => {
+                    if (!dataByDate[row.date]) {
+                        dataByDate[row.date] = {
+                            date: row.date,
+                            totalMinutes: 0,
+                            languages: {}
+                        };
+                    }
+                    dataByDate[row.date].languages[row.language] = row.totalSeconds / 60;
+                    dataByDate[row.date].totalMinutes += row.totalSeconds / 60;
+                });
+
+                const listenList = [];
+                if (dateRange.minDate && dateRange.maxDate) {
+                    const startDate = new Date(dateRange.minDate);
+                    const endDate = new Date(dateRange.maxDate);
+                    endDate.setDate(endDate.getDate() + 1);
+                    
+                    for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
+                        const dateString = d.toISOString().split('T')[0];
+                        if (dataByDate[dateString]) {
+                            listenList.push(dataByDate[dateString]);
+                        } else {
+                            listenList.push({
+                                date: dateString,
+                                totalMinutes: 0,
+                                languages: {}
+                            });
+                        }
+                    }
+                }
+
+                const totseconds = rows.reduce((sum, row) => sum + row.totalSeconds, 0);
+                const tottime = formatSeconds(totseconds);
+
+                res.render("chart", { listenList: JSON.stringify(listenList), tottime, languages: langs, selectedLanguage, layout: false });
             });
-
-            const listenList = Object.values(dataByDate);
-
-            const totseconds = rows.reduce((sum, row) => sum + row.totalSeconds, 0);
-            const tottime = formatSeconds(totseconds);
-
-            res.render("chart", { listenList: JSON.stringify(listenList), tottime, languages: langs, selectedLanguage, layout: false });
         });
     });
 });
