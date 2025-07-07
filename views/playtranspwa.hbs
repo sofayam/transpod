@@ -492,6 +492,11 @@
             }
         }
 
+        function onDisplayChange() {
+            currentPhraseIndex = -1; // Force re-evaluation and scroll
+            highlightCurrentPhrase();
+        }
+
         // Attach the timeupdate event listener
         audio.addEventListener("timeupdate", function () {
             updateTimeDisplay();
@@ -502,9 +507,16 @@
         // Update highlight when the page becomes visible
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "visible") {
-                highlightCurrentPhrase();
+                onDisplayChange();
             }
         });
+
+        // Update highlight on resize or orientation change
+        window.addEventListener("resize", onDisplayChange);
+        window.addEventListener("orientationchange", onDisplayChange);
+
+        // More robust handling for mobile, especially iOS
+        window.addEventListener("pageshow", onDisplayChange);
 
         // Audio control buttons
         function setStartTime() {
