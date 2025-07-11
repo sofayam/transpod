@@ -47,6 +47,12 @@ app.engine('hbs', hbs.engine);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 
+app.use((req, res, next) => {
+    req.on('aborted', () => {
+        console.log('Request aborted by client');
+    });
+    next();
+});
 app.use(express.json())
 
 function getPods(forceAll = false) {

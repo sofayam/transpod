@@ -112,9 +112,9 @@
                 </select>
                 <label for="rangeSelect">Show: </label>
                 <select id="rangeSelect" name="range">
-                    <option value="30">Last 30</option>
+                    <option value="30" selected>Last 30</option>
                     <option value="100">Last 100</option>
-                    <option value="all" selected>All</option>
+                    <option value="all">All</option>
                 </select>
             </form>
         </div>
@@ -135,7 +135,7 @@
             return podcastData.slice(-n);
         }
 
-        function renderChart(range = "all") {
+        function renderChart(range = "30") {
             const dataToShow = getTruncatedData(range);
             const ctx = document.getElementById('podcastChart').getContext('2d');
             
