@@ -610,6 +610,103 @@ app.post('/update-meta-global', (req, res) => {
     }
 });
 
+
+app.get("/search", (req, res) => {
+    const { query, language } = req.query;
+
+    // Function to get all available languages
+    const getLanguages = () => {
+        const contentPath = path.join(__dirname, "content");
+        const podDirs = fs.readdirSync(contentPath, { withFileTypes: true })
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+
+        const languages = new Set();
+        podDirs.forEach(podDir => {
+            const configPath = path.join(contentPath, podDir, "_config.md");
+            if (fs.existsSync(configPath)) {
+                try {
+                    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                    if (config.lang) {
+                        languages.add(config.lang);
+                    }
+                } catch (error) {
+                    console.error(`Error reading or parsing ${configPath}:`, error);
+                }
+            }
+        });
+        return Array.from(languages).sort();
+    };
+
+    const languages = getLanguages();
+
+    if (!query) {
+        // Render the search page if no query is provided
+        return res.render("search", { layout: false, languages, query, language });
+    }
+
+    const results = [];
+    const contentPath = path.join(__dirname, "content");
+    const podDirs = fs.readdirSync(contentPath, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+
+    for (const podDir of podDirs) {
+        if (results.length >= 100) break;
+
+        const configPath = path.join(contentPath, podDir, "_config.md");
+        let lang = 'ja'; // Default language
+        if (fs.existsSync(configPath)) {
+            try {
+                const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                if (config.lang) {
+                    lang = config.lang;
+                }
+            } catch (error) {
+                console.error(`Error reading or parsing ${configPath}:`, error);
+            }
+        }
+
+        if (lang === language) {
+            const podPath = path.join(contentPath, podDir);
+            const files = fs.readdirSync(podPath);
+            for (const file of files) {
+                if (results.length >= 100) break;
+
+                if (file.endsWith(".json")) {
+                    const baseName = file.slice(0, -5);
+                    const mp3Path = path.join(podPath, baseName + ".mp3");
+
+                    if (fs.existsSync(mp3Path)) {
+                        const filePath = path.join(podPath, file);
+                        try {
+                            const transcript = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                            for (const segment of transcript) {
+                                if (results.length >= 100) break;
+                                
+                                const normalizedText = segment.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                                const normalizedQuery = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                                if (segment.text && normalizedText.toLowerCase().includes(normalizedQuery.toLowerCase())) {
+                                    results.push({
+                                        podcast: podDir,
+                                        file: file,
+                                        start: segment.start,
+                                        text: segment.text.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`)
+                                    });
+                                }
+                            }
+                        } catch (error) {
+                            console.error(`Error reading or parsing ${filePath}:`, error);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    res.render("search", { layout: false, languages, results, query, language });
+});
+
 app.use(express.static("content"))
 
 app.listen(PORT, () =>
