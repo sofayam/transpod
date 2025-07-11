@@ -520,10 +520,10 @@
 
         // Audio control buttons
         function setStartTime() {
-            audio.currentTime = {{ meta.timeInPod }}
-        seekSlider.max = audio.duration;
-        seekSlider.disabled = false;
-    }
+            audio.currentTime = {{ startTime }};
+            seekSlider.max = audio.duration;
+            seekSlider.disabled = false;
+        }
 
         seekSlider.addEventListener("input", function () {
             audio.currentTime = seekSlider.value;

@@ -35,7 +35,12 @@ const { finished } = require('stream')
 const hbs = exphbs.create({
     extname: 'hbs',
     helpers: {
-        eq: (a, b) => a === b
+        eq: (a, b) => a === b,
+        formatTimestamp: (totalSeconds) => {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            return `${minutes}:${String(seconds).padStart(2, '0')}`;
+        }
     }
 });
 app.engine('hbs', hbs.engine);
@@ -205,13 +210,16 @@ function getNextep(ep) {
 app.get("/play/:pod/:ep", (req, res, next) => {
     let pod = req.params.pod
     let ep = req.params.ep
+    let startTime = req.query.t || null;
+
     let epPath = path.join(__dirname, "content", pod, ep)
     mp3name = "/" + pod + "/" + encodeURIComponent(ep) + ".mp3"
     meta = readMetaEp(pod, ep)
 
-    //    transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
-    //    transcripttext = fs.readFileSync(transcriptfile)
-    //  TODO apologize if no transcript is available
+    if (startTime === null) {
+        startTime = meta.timeInPod || 0;
+    }
+
     transcript = getTranscript(pod, ep)
     transcripttext = transcript.text
     transcriptsrc = transcript.src
@@ -227,6 +235,7 @@ app.get("/play/:pod/:ep", (req, res, next) => {
         transcript: transcripttext,
         source: transcriptsrc, meta, nextep,
         info,
+        startTime,
         layout: false
     })
 
@@ -621,7 +630,7 @@ app.get("/search", (req, res) => {
             .filter(dirent => dirent.isDirectory())
             .map(dirent => dirent.name);
 
-        const languages = new Set();
+        const languages = new Set(['ja']);
         podDirs.forEach(podDir => {
             const configPath = path.join(contentPath, podDir, "_config.md");
             if (fs.existsSync(configPath)) {
@@ -678,9 +687,9 @@ app.get("/search", (req, res) => {
                     const mp3Path = path.join(podPath, baseName + ".mp3");
 
                     if (fs.existsSync(mp3Path)) {
-                        const filePath = path.join(podPath, file);
                         try {
-                            const transcript = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                            const transcriptData = getTranscript(podDir, baseName);
+                            const transcript = JSON.parse(transcriptData.text);
                             for (const segment of transcript) {
                                 if (results.length >= 100) break;
                                 
@@ -689,14 +698,14 @@ app.get("/search", (req, res) => {
                                 if (segment.text && normalizedText.toLowerCase().includes(normalizedQuery.toLowerCase())) {
                                     results.push({
                                         podcast: podDir,
-                                        file: file,
+                                        file: baseName,
                                         start: segment.start,
                                         text: segment.text.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`)
                                     });
                                 }
                             }
                         } catch (error) {
-                            console.error(`Error reading or parsing ${filePath}:`, error);
+                            console.error(`Error processing transcript for ${podDir}/${baseName}:`, error);
                         }
                     }
                 }
@@ -756,9 +765,11 @@ const getTranscript = (pod, ep) => {
         //    1.2 Look for file containing canonical index in transcripts folder
 
         transfolder = path.join(__dirname, "content", pod, "transcripts")
-        const res = findFileInDirectory(transfolder, index)
-        if (res.length == 1) {
-            foundtranscript = res[0]
+        if (fs.existsSync(transfolder)) {
+            const res = findFileInDirectory(transfolder, index)
+            if (res.length == 1) {
+                foundtranscript = res[0]
+            }
         }
 
         // 2 If so convert to json and use that
