@@ -8,7 +8,8 @@ RUN npm install
 
 COPY podserver.cjs .
 COPY views views
-COPY manifest.json . 
+COPY manifest.json .
+COPY public public 
 
 EXPOSE 8014
 
