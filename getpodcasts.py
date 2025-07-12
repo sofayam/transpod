@@ -21,7 +21,7 @@ def logdownload(podcast, episode_title):
 
 
 # Function to download the latest podcast
-def download(rss_feed_url, lang, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun):
+def download(rss_feed_url, lang, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun, complete_n=None):
     # Ensure the download folder exists
     os.makedirs(download_folder, exist_ok=True)
 
@@ -97,16 +97,40 @@ def download(rss_feed_url, lang, download_folder, latest, relative, first, last,
     if relative:
         entries = feed.entries
     else:
-        entries = sorted(feed.entries, key=lambda e: e.get("published_parsed"))
+        entries = sorted(feed.entries, key=lambda e: e.get("published_parsed")) # Sort by published date, oldest first
 
-    for idx in range(first - 1, last):
+    episodes_to_download = []
+
+    if complete_n is not None:
+        downloaded_count = 0
+        for latest_episode in entries:
+            if downloaded_count >= complete_n:
+                break
+
+            episode_title = latest_episode.title
+            file_base = episode_title.replace(" ", "_").replace("/", "_").replace(":", "_").replace("'", "_").replace('"', "_")
+            mp3name = file_base + ".mp3"
+            mp3path = os.path.join(download_folder, mp3name)
+
+            if not os.path.exists(mp3path):
+                episodes_to_download.append(latest_episode)
+                downloaded_count += 1
+            else:
+                print(f"[{folder_name}] {mp3path} already downloaded", file=sys.stderr)
+    else:
+        # Existing logic for -r, -a, -l
+        for idx in range(first - 1, last):
+            if idx < 0 or idx >= len(entries):
+                continue # Skip if index is out of bounds
+            episodes_to_download.append(entries[idx])
+
+    for latest_episode in episodes_to_download:
         # check for the exisitence of a file called "STOP.FLAG" in the current directory
         if os.path.exists("STOP.FLAG"):
             print(f"[{folder_name}] STOP.FLAG file found. Stopping the download process.", file=sys.stderr)
             # remove the STOP.FLAG file
             os.remove("STOP.FLAG")
             break
-        latest_episode = entries[idx]
         episode_title = latest_episode.title
         media_url = latest_episode.enclosures[0].href  # Get the media URL from the 'enclosures'
 
@@ -117,11 +141,10 @@ def download(rss_feed_url, lang, download_folder, latest, relative, first, last,
         mp3path = os.path.join(download_folder, mp3name)
         infopath = os.path.join(download_folder, infoname)
 
-        # Check if file already exists
+        # Check if file already exists (should mostly be handled by complete_n logic, but good for safety)
         if os.path.exists(mp3path):
-            print(f"[{folder_name}] {mp3path} already downloaded", file=sys.stderr)
-            if latest:
-                break
+            print(f"[{folder_name}] {mp3path} already downloaded (skipped)", file=sys.stderr)
+            continue
         else:
             # Download the episode
             print(f"[{folder_name}] Downloading: {episode_title}", file=sys.stderr)
@@ -181,6 +204,8 @@ def parse_args():
 
     group.add_argument("-l", "--latest", help="download the latest episodes", action="store_true")
 
+    group.add_argument("-c", "--complete", type=int, help="Download up to N undownloaded episodes.")
+
     parser.add_argument("-t", "--transcribe", help="Run transcribe on the downloaded files", action="store_true")
 
     parser.add_argument("-s", "--sync", help="sync to NAS with rsync", action="store_true")
@@ -204,17 +229,26 @@ feedfolder =getattr(args,'filename')
 relative = False
 offs = getattr(args, "relative")
 latest = getattr(args, "latest")
-if offs or latest:
-    relative = True
+if args.complete is not None:
+    # If --complete is used, first, last, relative, latest are not relevant for the download logic
+    # Set them to dummy values to avoid TypeError
+    first = 0
+    last = 0
+    relative = False
+    latest = False
 else:
-    offs = getattr(args, "absolute")
-if latest:
-    offs = [1, 5]
-first = offs[0]
-if len(offs) > 1:
-    last = offs[1]
-else:
-    last = first
+    # Existing logic for -r, -a, -l
+    if offs or latest:
+        relative = True
+    else:
+        offs = getattr(args, "absolute")
+    if latest:
+        offs = [1, 5]
+    first = offs[0]
+    if len(offs) > 1:
+        last = offs[1]
+    else:
+        last = first
 
 conf = config.getConfig(feedfolder)
 rss_feed_url = conf["feed"]
@@ -222,4 +256,4 @@ lang = conf.get("lang", "ja")   # Default to Japanese if not specified in config
 
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
-download(rss_feed_url, lang, download_folder, latest, relative, first, last, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"))
+download(rss_feed_url, lang, download_folder, latest, relative, first, last, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"), getattr(args, "complete"))
