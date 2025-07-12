@@ -77,6 +77,12 @@
             padding: 2px 4px;
             border-radius: 3px;
         }
+        #loader {
+            display: none;
+            font-size: 18px;
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -91,6 +97,8 @@
         </select>
         <button type="submit">Search</button>
     </form>
+
+    <div id="loader">Searching... ⏳</div>
 
     {{#if results}}
         <h2>Results for "{{query}}" in language "{{language}}"</h2>
@@ -125,5 +133,11 @@
             <p>No results found.</p>
         {{/if}}
     {{/if}}
+
+    <script>
+        document.querySelector('.search-form').addEventListener('submit', function() {
+            document.getElementById('loader').style.display = 'block';
+        });
+    </script>
 </body>
 </html>
