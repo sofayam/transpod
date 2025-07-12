@@ -98,9 +98,26 @@
             <ul>
                 {{#each results}}
                     <li>
-                        <strong>Podcast:</strong> {{podcast}}<br>
-                        <strong>File:</strong> <a href="/play/{{podcast}}/{{file}}?t={{start}}">{{file}} ({{formatTimestamp start}})</a><br>
-                        <strong>Text:</strong> {{{text}}}
+                        {{#if (gt hits.length 1)}}
+                            <details>
+                                <summary>
+                                    <strong>Podcast:</strong> {{podcast}}<br>
+                                    <strong>Episode:</strong> <a href="/play/{{podcast}}/{{encodedFile}}">{{file}}</a> ({{hits.length}} hits)
+                                </summary>
+                                <ul>
+                                    {{#each hits}}
+                                        <li style="margin-left: 20px; margin-top: 10px;">
+                                            <a href="/play/{{../podcast}}/{{../encodedFile}}?t={{start}}">({{formatTimestamp start}})</a>
+                                            {{{text}}}
+                                        </li>
+                                    {{/each}}
+                                </ul>
+                            </details>
+                        {{else}}
+                            <strong>Podcast:</strong> {{podcast}}<br>
+                            <strong>Episode:</strong> <a href="/play/{{podcast}}/{{encodedFile}}?t={{hits.0.start}}">{{file}}</a><br>
+                            <strong>Text:</strong> {{{hits.0.text}}}
+                        {{/if}}
                     </li>
                 {{/each}}
             </ul>

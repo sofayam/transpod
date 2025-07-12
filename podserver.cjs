@@ -35,6 +35,7 @@ const { finished } = require('stream')
 const hbs = exphbs.create({
     extname: 'hbs',
     helpers: {
+        gt: (a, b) => a > b,
         eq: (a, b) => a === b,
         formatTimestamp: (totalSeconds) => {
             const minutes = Math.floor(totalSeconds / 60);
@@ -705,6 +706,7 @@ app.get("/search", (req, res) => {
                                     results.push({
                                         podcast: podDir,
                                         file: baseName,
+                                        encodedFile: encodeURIComponent(baseName),
                                         start: segment.start,
                                         text: segment.text.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`)
                                     });
@@ -719,7 +721,26 @@ app.get("/search", (req, res) => {
         }
     }
 
-    res.render("search", { layout: false, languages, results, query, language });
+    const groupedResults = results.reduce((acc, result) => {
+        const key = `${result.podcast}|${result.file}`;
+        if (!acc[key]) {
+            acc[key] = {
+                podcast: result.podcast,
+                file: result.file,
+                encodedFile: result.encodedFile,
+                hits: []
+            };
+        }
+        acc[key].hits.push({
+            start: result.start,
+            text: result.text
+        });
+        return acc;
+    }, {});
+
+    const finalResults = Object.values(groupedResults);
+
+    res.render("search", { layout: false, languages, results: finalResults, query, language });
 });
 
 app.use(express.static("content"))
