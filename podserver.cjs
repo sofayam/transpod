@@ -743,6 +743,7 @@ app.get("/search", (req, res) => {
     res.render("search", { layout: false, languages, results: finalResults, query, language });
 });
 
+app.use(express.static("public"))
 app.use(express.static("content"))
 
 app.listen(PORT, () =>

@@ -1,0 +1,95 @@
+/* Styles for the podcasts page */
+.container {
+    display: flex;
+    justify-content: center;
+}
+
+.table {
+    width: 90%;
+    max-width: 600px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.table-header, .table-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    flex-wrap: nowrap;
+    gap: 10px;
+}
+
+.table-header {
+    background: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+.col {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.folder-name {
+    flex: 2;
+}
+
+select {
+    flex: 0 1 auto;
+    min-width: 80px;
+    max-width: 120px;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+}
+
+.link-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.styled-link {
+    display: inline-block;
+    padding: 10px 15px;
+    margin: 5px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.styled-link:hover {
+    background-color: #0056b3;
+}
+
+@media (max-width: 480px) {
+    .table-header, .table-row {
+        flex-wrap: nowrap;
+    }
+
+    .folder-name {
+        flex: 2;
+    }
+
+    select {
+        flex: 1;
+        min-width: 80px;
+    }
+
+    .styled-link {
+        display: block;
+        width: 80%;
+        margin: 5px auto;
+    }
+}
