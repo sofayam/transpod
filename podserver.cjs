@@ -418,7 +418,7 @@ app.get("/getNew", (req, res) => {
 
         // Stream the response from getnewserver to the browser
         getnewRes.on('data', (chunk) => {
-            console.log(`Streaming chunk: ${chunk}`);
+            // console.log(`Streaming chunk: ${chunk}`);
             res.write(chunk);
         });
 

@@ -8,6 +8,10 @@
 <body>
     <h1>Search Transcripts</h1>
 
+    <div style="margin-bottom: 1em;">
+      Return to main page: <button id="top">⏫</button>
+    </div>
+
     <form action="/search" method="get" class="search-form">
         <input type="text" id="query" name="query" value="{{query}}" placeholder="Search for...">
         <select id="language" name="language">
@@ -18,7 +22,7 @@
         <button type="submit">Search</button>
     </form>
 
-    <div id="loader">Searching... ⏳</div>
+    <div id="loader" style="display: none;">Searching... ⏳</div>
 
     <div id="results-container" style="display: none;">
         <h2 id="results-heading"></h2>
@@ -29,6 +33,11 @@
     </div>
 
     <script>
+        const topBtn = document.getElementById("top");
+        topBtn.addEventListener("click", () => {
+            localStorage.setItem("lastPage", "")
+            window.location.href = "/"
+        });
         document.querySelector('.search-form').addEventListener('submit', function() {
             document.getElementById('loader').style.display = 'block';
             document.getElementById('results-container').style.display = 'none';
@@ -45,8 +54,7 @@
             const noResultsMessage = document.getElementById('no-results-message');
             const loader = document.getElementById('loader');
 
-            // Hide loader on page load
-            loader.style.display = 'none';
+            
 
             if (query) { // Only show results if a query was made
                 if (results.length > 0) {
