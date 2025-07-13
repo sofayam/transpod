@@ -25,12 +25,14 @@
             window.location.href = '/';
         });
         document.getElementById('runScriptButton').addEventListener('click', () => {
+            console.log('Run script button clicked.');
             const outputElement = document.getElementById('output');
             outputElement.textContent = 'Starting script...\n';
 
             // Fetch the /proxy-getnew endpoint
             fetch('/getNew')
                 .then(response => {
+                    console.log('Fetch response received.', response);
                     if (!response.body) {
                         throw new Error('ReadableStream not supported in this browser.');
                     }
@@ -43,6 +45,7 @@
                         reader.read().then(({ done, value }) => {
                             if (done) {
                                 outputElement.textContent += '\nScript finished.';
+                                console.log('Script finished streaming.');
                                 return;
                             }
 
@@ -56,6 +59,7 @@
                     readStream();
                 })
                 .catch(error => {
+                    console.error('Fetch error:', error);
                     outputElement.textContent += `\nError: ${error.message}`;
                 });
         });

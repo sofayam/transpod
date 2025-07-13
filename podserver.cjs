@@ -740,7 +740,7 @@ app.get("/search", (req, res) => {
 
     const finalResults = Object.values(groupedResults);
 
-    res.render("search", { layout: false, languages, results: finalResults, query, language });
+    res.render("search", { layout: false, languages, results: JSON.stringify(finalResults), query, language });
 });
 
 app.use(express.static("public"))

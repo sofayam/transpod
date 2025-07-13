@@ -3,6 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/search.css">
 </head>
 <body>
     <h1>Search Transcripts</h1>
@@ -19,43 +20,73 @@
 
     <div id="loader">Searching... ⏳</div>
 
-    {{#if results}}
-        <h2>Results for "{{query}}" in language "{{language}}"</h2>
-        {{#if results.length}}
-            <ul>
-                {{#each results}}
-                    <li>
-                        {{#if (gt hits.length 1)}}
-                            <details>
-                                <summary>
-                                    <strong>Podcast:</strong> {{podcast}}<br>
-                                    <strong>Episode:</strong> <a href="/play/{{podcast}}/{{encodedFile}}">{{file}}</a> ({{hits.length}} hits)
-                                </summary>
-                                <ul>
-                                    {{#each hits}}
-                                        <li style="margin-left: 20px; margin-top: 10px;">
-                                            <a href="/play/{{../podcast}}/{{../encodedFile}}?t={{start}}">({{formatTimestamp start}})</a>
-                                            {{{text}}}
-                                        </li>
-                                    {{/each}}
-                                </ul>
-                            </details>
-                        {{else}}
-                            <strong>Podcast:</strong> {{podcast}}<br>
-                            <strong>Episode:</strong> <a href="/play/{{podcast}}/{{encodedFile}}?t={{hits.0.start}}">{{file}}</a><br>
-                            <strong>Text:</strong> {{{hits.0.text}}}
-                        {{/if}}
-                    </li>
-                {{/each}}
-            </ul>
-        {{else}}
-            <p>No results found.</p>
-        {{/if}}
-    {{/if}}
+    <div id="results-container" style="display: none;">
+        <h2 id="results-heading"></h2>
+        <div id="results-list">
+                <div id="results-list">
+        </div>
+        <p id="no-results-message" style="display: none;">No results found.</p>
+    </div>
 
     <script>
         document.querySelector('.search-form').addEventListener('submit', function() {
             document.getElementById('loader').style.display = 'block';
+            document.getElementById('results-container').style.display = 'none';
+            document.getElementById('no-results-message').style.display = 'none';
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const results = {{{results}}};
+            const query = "{{query}}";
+            const language = "{{language}}";
+            const resultsContainer = document.getElementById('results-container');
+            const resultsHeading = document.getElementById('results-heading');
+            const resultsList = document.getElementById('results-list');
+            const noResultsMessage = document.getElementById('no-results-message');
+            const loader = document.getElementById('loader');
+
+            // Hide loader on page load
+            loader.style.display = 'none';
+
+            if (query) { // Only show results if a query was made
+                if (results.length > 0) {
+                    resultsHeading.textContent = `Results for "${query}" in language "${language}" (${results.length} found)`;
+                    resultsContainer.style.display = 'block';
+
+                    results.forEach(function(result) {
+                        const li = document.createElement('li');
+                        if (result.hits.length > 1) {
+                            const details = document.createElement('details');
+                            const summary = document.createElement('summary');
+                            summary.innerHTML = `<strong>Podcast:</strong> ${result.podcast}<br><strong>Episode:</strong> <a href="/play/${result.podcast}/${result.encodedFile}">${result.file}</a> (${result.hits.length} hits)`;
+                            details.appendChild(summary);
+
+                            const ul = document.createElement('ul');
+                            result.hits.forEach(function(hit) {
+                                const hitLi = document.createElement('li');
+                                hitLi.style.marginLeft = '20px';
+                                hitLi.style.marginTop = '10px';
+                                hitLi.innerHTML = `<a href="/play/${result.podcast}/${result.encodedFile}?t=${hit.start}">(${formatTimestamp(hit.start)})</a> ${hit.text}`;
+                                ul.appendChild(hitLi);
+                            });
+                            details.appendChild(ul);
+                            li.appendChild(details);
+                        } else {
+                            li.innerHTML = `<strong>Podcast:</strong> ${result.podcast}<br><strong>Episode:</strong> <a href="/play/${result.podcast}/${result.encodedFile}?t=${result.hits[0].start}">${result.file}</a><br><strong>Text:</strong> ${result.hits[0].text}`;
+                        }
+                        resultsList.appendChild(li);
+                    });
+                } else {
+                    noResultsMessage.style.display = 'block';
+                }
+            }
+
+            // Helper function for formatting timestamp (copied from Handlebars helper)
+            function formatTimestamp(totalSeconds) {
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = Math.floor(totalSeconds % 60);
+                return `${minutes}:${String(seconds).padStart(2, '0')}`;
+            }
         });
     </script>
 </body>
