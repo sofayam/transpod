@@ -1,0 +1,23 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/podcasts.css">
+    <title>Concordances</title>
+</head>
+<body>
+    <h1>Concordances</h1>
+    <div class="container">
+        <ul>
+            {{#each files}}
+            <li><a href="/concordances/{{this}}">{{this}}</a></li>
+            {{/each}}
+        </ul>
+    </div>
+    <div class="link-container">
+        <a href="/" class="styled-link">Back to Podcasts</a>
+    </div>
+</body>
+</html>

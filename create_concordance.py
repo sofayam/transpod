@@ -6,7 +6,7 @@ import argparse
 import html
 import urllib.parse
 
-def create_concordance(subfolder, n, base_url, lang):
+def create_concordance(subfolder, n, lang):
     """
     Reads all transcripts from *.json files in a subfolder,
     creates a concordance of all words, and generates a static
@@ -114,6 +114,7 @@ def create_concordance(subfolder, n, base_url, lang):
 """)
         f.write("</head>\n")
         f.write("<body>\n")
+        f.write('<a href="/">Back to Podcasts</a>\n')
         f.write(f"<h1>Concordance for '{subfolder}'</h1>\n")
 
         # Add statistics section
@@ -143,7 +144,7 @@ def create_concordance(subfolder, n, base_url, lang):
                     start_time_str = "N/A"
 
                 episode_name = os.path.splitext(occ['source_file'])[0]
-                play_url = f"{base_url}/play/{subfolder}/{urllib.parse.quote(episode_name)}?t={start_time}"
+                play_url = f"/play/{subfolder}/{urllib.parse.quote(episode_name)}?t={start_time}"
 
                 context_text = html.escape(occ.get('text', 'No context available.'))
                 source_file = html.escape(occ.get('source_file', 'Unknown file'))
@@ -162,8 +163,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate a concordance from podcast transcripts.')
     parser.add_argument('subfolder', type=str, help='The subfolder in the "content" directory containing the podcast episodes.')
     parser.add_argument('-n', type=int, default=50, help='The maximum number of occurrences to display for each word (default: 50).')
-    parser.add_argument('--base-url', type=str, default='http://localhost:8014', help='The base URL for the play links.')
     parser.add_argument('--lang', type=str, default='sv', help='The language of the podcast (default: sv).')
     args = parser.parse_args()
 
-    create_concordance(args.subfolder, args.n, args.base_url, args.lang)
+    create_concordance(args.subfolder, args.n, args.lang)

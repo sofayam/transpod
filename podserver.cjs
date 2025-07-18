@@ -545,6 +545,18 @@ app.get("/recentListen", (req, res) => {
     res.render("recentListen", { epList, totalTime, layout: false })
 })
 
+app.get("/concordances", (req, res) => {
+    const concordancesPath = path.join(__dirname, "public", "concordances");
+    fs.readdir(concordancesPath, (err, files) => {
+        if (err) {
+            console.error("Error reading concordances directory:", err);
+            return res.status(500).send("Error loading concordances.");
+        }
+        const htmlFiles = files.filter(file => file.endsWith(".html"));
+        res.render("concordances", { files: htmlFiles, layout: false });
+    });
+});
+
 function readMetaEp(pod, ep) {
     const metaPath = path.join(__dirname, "content", pod, ep + ".meta")
     if (fs.existsSync(metaPath)) {
