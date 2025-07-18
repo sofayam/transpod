@@ -56,7 +56,7 @@ app.use((req, res, next) => {
 });
 app.use(express.json())
 
-function getPods(forceAll = false) {
+function getPods(forceAll = false, language = 'all') {
 
     let coresetOnly = readMetaGlobal().coresetOnly === "true"
     if (forceAll) {
@@ -72,24 +72,57 @@ function getPods(forceAll = false) {
             return true
         }
     }
+
     let podPath = path.join(__dirname, "content")
     let contents = fs.readdirSync(podPath, { withFileTypes: true })
         .filter(dirent => dirent.isDirectory())
         // ignore @eaDir directories
-        .filter(dirent => !dirent.name.startsWith('@eaDir'))    
+        .filter(dirent => !dirent.name.startsWith('@eaDir'))
         .filter(pod => isCore(pod.name))
         .map(dirent => dirent.name)
+
+    if (language && language !== 'all') {
+        contents = contents.filter(pod => {
+            const config = readConfig(pod);
+            const lang = config.lang || 'ja'; // Default to 'ja' if not specified
+            return lang === language;
+        });
+    }
+
     return contents
 }
 
-app.get('/manifest.json', (req, res) => {
+app.get("/manifest.json", (req, res) => {
     res.type('application/manifest+json');
     res.sendFile(__dirname + '/manifest.json');
 });
 
-app.get("/", (req, res, next) => {
+const getLanguages = () => {
+    const contentPath = path.join(__dirname, "content");
+    const podDirs = fs.readdirSync(contentPath, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
 
-    let contents = getPods()
+    const languages = new Set(['ja']);
+    podDirs.forEach(podDir => {
+        const configPath = path.join(contentPath, podDir, "_config.md");
+        if (fs.existsSync(configPath)) {
+            try {
+                const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                if (config.lang) {
+                    languages.add(config.lang);
+                }
+            } catch (error) {
+                console.error(`Error reading or parsing ${configPath}:`, error);
+            }
+        }
+    });
+    return Array.from(languages).sort();
+};
+
+app.get("/", (req, res, next) => {
+    const selectedLanguage = req.query.language || 'all';
+    let contents = getPods(false, selectedLanguage)
     let pcData = []
     contents.forEach(file => {
         // console.log(file)
@@ -98,7 +131,8 @@ app.get("/", (req, res, next) => {
         pcData.push(podEntry)
     })
     metaGlobal = readMetaGlobal()
-    res.render("podcasts", { pods: pcData, layout: false, coresetOnly: metaGlobal.coresetOnly })
+    const languages = getLanguages();
+    res.render("podcasts", { pods: pcData, layout: false, coresetOnly: metaGlobal.coresetOnly, languages, selectedLanguage })
 })
 
 function compareEpisode(ep1, ep2) {
