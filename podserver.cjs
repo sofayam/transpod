@@ -270,6 +270,9 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     if (fs.existsSync(infopath)) {
         info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
     }
+    info.language = readConfig(pod).lang || 'ja';
+    const config = readConfig(pod);
+    info.language = config.lang || 'ja';
 
     res.render("playtranspwa", {
         pod, mp3file: mp3name,
@@ -856,7 +859,7 @@ const getTranscript = (pod, ep) => {
         // 3 Else use the whisper thing from the json file
         transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
         try {
-            transcripttext = fs.readFileSync(transcriptfile)
+            transcripttext = fs.readFileSync(transcriptfile, 'utf-8')
         } catch (error) {
             console.log("no transcript found, defaulting to polite apology")
             transcripttext = '[{ "start": 0.0, "end": 10000.0, "text": "申し訳ありませんが、このエピソードのトランスクリプトはまだ利用できません。"}]'
