@@ -714,7 +714,7 @@ app.get("/search", (req, res) => {
         .map(dirent => dirent.name);
 
     for (const podDir of podDirs) {
-        if (results.length >= 100) break;
+    //    if (results.length >= 100) break;
 
         const configPath = path.join(contentPath, podDir, "_config.md");
         let lang = 'ja'; // Default language
@@ -731,6 +731,7 @@ app.get("/search", (req, res) => {
 
         if (lang === language) {
             const podPath = path.join(contentPath, podDir);
+            console.log(`Searching in podcast: ${podDir} (${podPath})`);
             const files = fs.readdirSync(podPath);
             for (const file of files) {
                 if (results.length >= 100) break;
@@ -805,7 +806,7 @@ function findFileInDirectory(directory, searchString) {
 
             return matchingFiles
         } else {
-            console.error("No matching files found.");
+            console.error("No matching files found ",  directory, " for search string: ", searchString);
         }
     } catch (error) {
         console.error("Error reading directory:", error);
