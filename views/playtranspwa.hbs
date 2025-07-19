@@ -27,14 +27,13 @@
         </div>
              <div>
 
-
-            <button id="next">⏭️</button>
+            <button id="toggle-mode">👂</button>
             <button id="rewind">⏪ -5s</button>
             <button id="playpause">▶</button>
             <button id="finished">✅</button>
             <button id="increase-font">A↑</button>
             <button id="decrease-font">A↓</button>
-            <button id="toggle-mode">🔎</button>
+        
             </div>
   
     </div>
@@ -253,6 +252,7 @@
                             'en': 'English',
                             'ru': 'Russian',
                             'pt': 'Portuguese',
+                            'sv': 'Swedish',
                         }[lang] || lang;
                         const url = `https://en.wiktionary.org/wiki/${cleanWord}#${langName}`;
                         window.open(url, '_blank');
@@ -399,7 +399,13 @@ audio.addEventListener("progress", () => {
 
         toggleModeBtn.addEventListener("click", () => {
             searchMode = !searchMode;
-            toggleModeBtn.style.backgroundColor = searchMode ? "lightblue" : "";
+            if (searchMode) {
+                toggleModeBtn.textContent = "🔎";
+                toggleModeBtn.style.backgroundColor = "lightblue";
+            } else {
+                toggleModeBtn.textContent = "👂";
+                toggleModeBtn.style.backgroundColor = "";
+            }
         });
 
         window.onbeforeunload = function () {
