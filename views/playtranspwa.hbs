@@ -104,7 +104,7 @@
         audio.controls = false
         let seekSlider = document.getElementById("seekSlider");
         const transcriptionContainer = document.getElementById("transcription");
-        const nextBtn = document.getElementById("next");
+
         const backBtn = document.getElementById("back");
         const topBtn = document.getElementById("top");
         const playpauseBtn = document.getElementById("playpause");
@@ -334,9 +334,6 @@ audio.addEventListener("progress", () => {
 
         audio.addEventListener("canplaythrough", setStartTime)
 
-        nextBtn.addEventListener("click", () => {
-            saveMeta(true)
-        })
 
         function formatTime(seconds) {
             let min = Math.floor(seconds / 60);
