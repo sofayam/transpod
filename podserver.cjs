@@ -677,7 +677,7 @@ app.post('/update-meta-global', (req, res) => {
 
 
 app.get("/search", (req, res) => {
-    const { query, language } = req.query;
+    let { query, language, podcast } = req.query;
 
     // Function to get all available languages
     const getLanguages = () => {
@@ -704,67 +704,59 @@ app.get("/search", (req, res) => {
     };
 
     const languages = getLanguages();
+    if (!language && languages.length > 0) {
+        language = languages[0];
+    }
+    const podcasts = getPods(true, language);
 
     if (!query) {
         // Render the search page if no query is provided
-        return res.render("search", { layout: false, languages, query, language });
+        return res.render("search", { layout: false, languages, query, language, podcasts, selectedPodcast: podcast });
     }
 
     const results = [];
     const contentPath = path.join(__dirname, "content");
-    const podDirs = fs.readdirSync(contentPath, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory())
-        .map(dirent => dirent.name);
 
-    for (const podDir of podDirs) {
-    //    if (results.length >= 100) break;
+    let podDirsToSearch = getPods(true, language);
+    if (podcast && podcast !== 'all') {
+        podDirsToSearch = [podcast];
+    }
 
-        const configPath = path.join(contentPath, podDir, "_config.md");
-        let lang = 'ja'; // Default language
-        if (fs.existsSync(configPath)) {
-            try {
-                const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-                if (config.lang) {
-                    lang = config.lang;
-                }
-            } catch (error) {
-                console.error(`Error reading or parsing ${configPath}:`, error);
-            }
-        }
 
-        if (lang === language) {
-            const podPath = path.join(contentPath, podDir);
-            console.log(`Searching in podcast: ${podDir} (${podPath})`);
-            const files = fs.readdirSync(podPath);
-            for (const file of files) {
-                if (results.length >= 100) break;
+    for (const podDir of podDirsToSearch) {
+        //    if (results.length >= 100) break;
 
-                if (file.endsWith(".json")) {
-                    const baseName = file.slice(0, -5);
-                    const mp3Path = path.join(podPath, baseName + ".mp3");
+        const podPath = path.join(contentPath, podDir);
+        console.log(`Searching in podcast: ${podDir} (${podPath})`);
+        const files = fs.readdirSync(podPath);
+        for (const file of files) {
+            if (results.length >= 100) break;
 
-                    if (fs.existsSync(mp3Path)) {
-                        try {
-                            const transcriptData = getTranscript(podDir, baseName);
-                            const transcript = JSON.parse(transcriptData.text);
-                            for (const segment of transcript) {
-                                if (results.length >= 100) break;
-                                
-                                const normalizedText = segment.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                                const normalizedQuery = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                                if (segment.text && normalizedText.toLowerCase().includes(normalizedQuery.toLowerCase())) {
-                                    results.push({
-                                        podcast: podDir,
-                                        file: baseName,
-                                        encodedFile: encodeURIComponent(baseName),
-                                        start: segment.start,
-                                        text: segment.text.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`)
-                                    });
-                                }
+            if (file.endsWith(".json")) {
+                const baseName = file.slice(0, -5);
+                const mp3Path = path.join(podPath, baseName + ".mp3");
+
+                if (fs.existsSync(mp3Path)) {
+                    try {
+                        const transcriptData = getTranscript(podDir, baseName);
+                        const transcript = JSON.parse(transcriptData.text);
+                        for (const segment of transcript) {
+                            if (results.length >= 100) break;
+
+                            const normalizedText = segment.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                            const normalizedQuery = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                            if (segment.text && normalizedText.toLowerCase().includes(normalizedQuery.toLowerCase())) {
+                                results.push({
+                                    podcast: podDir,
+                                    file: baseName,
+                                    encodedFile: encodeURIComponent(baseName),
+                                    start: segment.start,
+                                    text: segment.text.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`)
+                                });
                             }
-                        } catch (error) {
-                            console.error(`Error processing transcript for ${podDir}/${baseName}:`, error);
                         }
+                    } catch (error) {
+                        console.error(`Error processing transcript for ${podDir}/${baseName}:`, error);
                     }
                 }
             }
@@ -790,7 +782,7 @@ app.get("/search", (req, res) => {
 
     const finalResults = Object.values(groupedResults);
 
-    res.render("search", { layout: false, languages, results: JSON.stringify(finalResults), query, language });
+    res.render("search", { layout: false, languages, results: JSON.stringify(finalResults), query, language, podcasts, selectedPodcast: podcast });
 });
 
 app.use(express.static("public"))
