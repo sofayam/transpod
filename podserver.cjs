@@ -795,7 +795,11 @@ app.listen(PORT, () =>
 function findFileInDirectory(directory, searchString) {
     try {
         const files = fs.readdirSync(directory); // Read all files in the directory
-        const matchingFiles = files.filter(file => file.includes(searchString));
+        // find only the files that start with the search string
+
+        const matchingFiles = files.filter(file => file.startsWith(searchString))
+
+        // const matchingFiles = files.filter(file => file.includes(searchString));
 
         if (matchingFiles.length > 0) {
 
@@ -820,6 +824,21 @@ function getIndex(title) {
 }
 
 const getTranscript = (pod, ep) => {
+
+
+     let source = "whisper"
+        transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
+        try {
+            transcripttext = fs.readFileSync(transcriptfile, 'utf-8')
+        } catch (error) {
+            console.log("no transcript found, defaulting to polite apology")
+            transcripttext = '[{ "start": 0.0, "end": 10000.0, "text": "申し訳ありませんが、このエピソードのトランスクリプトはまだ利用できません。"}]'
+        }
+
+    return { src: source, text: transcripttext }
+}
+
+const getTranscriptOld = (pod, ep) => {
     // 1 Is there an html transcript
     //    1.1 Derive canonical index
     // const match = ep.match(/^#(\d+)/)
@@ -1115,6 +1134,52 @@ app.get("/debug-db", (req, res) => {
         res.json(rows);
     });
 });
+
+app.get("/transformhtmltranscriptstojson", (req, res) => {
+    // Transform all html transcripts in for a given podcast into json files
+    const podcastName = req.query.podcast;
+    // convert name to directory in content folder
+    const podcastPath = path.join(__dirname, "content", podcastName);
+    const transcriptDir = path.join(podcastPath, "transcripts");
+    if (!fs.existsSync(transcriptDir)) {
+        return res.status(404).send("Transcript directory not found.");
+    }
+    // first find all the ".mp3" files in the podcast folder
+    const mp3Files = fs.readdirSync(podcastPath).filter(file => file.endsWith('.mp3'))
+
+    for (const mp3File of mp3Files) {
+        // if it is missing a corresponding .json file then create one based on the html transcript with a corresponding name
+        const baseName = mp3File.slice(0, -4); // Remove the .mp3 extension
+        const jsonFilePath = path.join(podcastPath, baseName + ".json");
+        if (!fs.existsSync(jsonFilePath)) {
+            // Check if the corresponding HTML transcript exists
+            // using the numerical id encoded in the mp3 file name
+            // using the algorithm also used in getTranscript
+            const { match, index } = getIndex(baseName);
+            let paddedNumber = "";
+            if (match) {
+                paddedNumber = index.padStart(4, '0'); // Ensure it is 4 digits
+            }
+            // find the htmlfile in the transcripts folder, it start with paddedNumber but you have to 
+            // find the exact file by searching for paddedNumber in the transcript folder
+            const htmlFiles = findFileInDirectory(transcriptDir, paddedNumber);
+            if (htmlFiles.length === 1) {
+                // We found exactly one HTML file that matches the padded number
+                const htmlFilePath = path.join(transcriptDir, htmlFiles[0]);
+                // Convert HTML transcript to JSON
+                const jsonContent = transhtml(htmlFilePath);
+                // Write the JSON content to the corresponding .json file
+                fs.writeFileSync(jsonFilePath, jsonContent, 'utf-8');
+                console.log(`Converted ${htmlFilePath} to ${jsonFilePath}`);
+            } else {
+                console.warn(`No HTML transcript found for ${baseName}, skipping.`);
+            }
+        } else {
+            console.log(`JSON file already exists for ${baseName}, skipping.`);
+        }
+    }
+    res.send("HTML transcripts converted to JSON where applicable.");
+})
 
 
 app.get("/legacyChartForSentimentalReasonsOnlyDoNotCallThis", (req, res) => {
