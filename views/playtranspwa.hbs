@@ -152,6 +152,13 @@
             const paragraph = document.createElement("p");
             const lang = "{{info.language}}";
 
+            // Set direction for Arabic
+            if (lang === 'ar') {
+                transcriptionContainer.setAttribute("dir", "rtl");
+            } else {
+                transcriptionContainer.setAttribute("dir", "ltr");
+            }
+
             data.forEach(segment => {
                 const phraseSpan = document.createElement("span");
                 phraseSpan.classList.add("phrase");
@@ -161,6 +168,12 @@
                 let words = [];
                 if (lang === 'ja') {
                     const segmenter = new Intl.Segmenter('ja', { granularity: 'word' });
+                    const segmented = segmenter.segment(segment.text);
+                    for (const s of segmented) {
+                        words.push(s.segment);
+                    }
+                } else if (lang === 'ar' && typeof Intl.Segmenter === "function") {
+                    const segmenter = new Intl.Segmenter('ar', { granularity: 'word' });
                     const segmented = segmenter.segment(segment.text);
                     for (const s of segmented) {
                         words.push(s.segment);
@@ -243,17 +256,15 @@
                 const target = event.target;
                 if (target.classList.contains("word")) {
                     const lang = "{{info.language}}";
-                    const cleanWord = target.textContent.trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()\?¿¡]/g, "");
+                    let cleanWord = target.textContent.trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()\?¿¡]/g, "");
+                    // convert to lowercase for consistency
+                    cleanWord = cleanWord.toLowerCase();
                     if (cleanWord) {
-                        const langName = {
-                            'ja': 'Japanese',
-                            'es': 'Spanish',
-                            'it': 'Italian',
-                            'en': 'English',
-                            'ru': 'Russian',
-                            'pt': 'Portuguese',
-                            'sv': 'Swedish',
-                        }[lang] || lang;
+         
+                        const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
+                    
+                        const langName = displayNames.of(lang)
+
                         const url = `https://en.wiktionary.org/wiki/${cleanWord}#${langName}`;
                         window.open(url, '_blank');
                     }
