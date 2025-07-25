@@ -7,6 +7,7 @@ COPY package.json .
 RUN npm install
 
 COPY podserver.cjs .
+# Cache bust
 COPY views views
 COPY manifest.json .
 COPY public public 
