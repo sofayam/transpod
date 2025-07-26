@@ -19,9 +19,48 @@ def logdownload(podcast, episode_title):
         log.write(f"download [{podcast}] '{episode_title}' on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         log.flush()
 
+def getImageUrl(feed: FeedParserDict) -> str:
+    """
+    Extracts the image URL from the feed.
+    Returns the URL if found, otherwise returns an empty string.
+    """
+    # Try standard RSS image
+    if "image" in feed.feed:
+        image = feed.feed.image
+        if isinstance(image, dict):
+            if "href" in image:
+                return image["href"]
+            if "url" in image:
+                return image["url"]
+        elif hasattr(image, "href"):
+            return image.href
+        elif hasattr(image, "url"):
+            return image.url
+
+    # Try iTunes image
+    if "itunes_image" in feed.feed:
+        itunes_image = feed.feed.itunes_image
+        if isinstance(itunes_image, dict) and "href" in itunes_image:
+            return itunes_image["href"]
+        elif hasattr(itunes_image, "href"):
+            return itunes_image.href
+        elif isinstance(itunes_image, str):
+            return itunes_image
+
+    # Try media_thumbnail
+    if "media_thumbnail" in feed.feed:
+        thumbnails = feed.feed.media_thumbnail
+        if isinstance(thumbnails, list) and len(thumbnails) > 0:
+            thumb = thumbnails[0]
+            if isinstance(thumb, dict) and "url" in thumb:
+                return thumb["url"]
+            elif hasattr(thumb, "url"):
+                return thumb.url
+
+    return ""
 
 # Function to download the latest podcast
-def download(rss_feed_url, lang, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun, complete_n=None):
+def download(rss_feed_url, lang, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun, image, complete_n=None):
     # Ensure the download folder exists
     os.makedirs(download_folder, exist_ok=True)
 
@@ -85,6 +124,26 @@ def download(rss_feed_url, lang, download_folder, latest, relative, first, last,
     except Exception as e:
         print(f"[{folder_name}] Error parsing RSS feed: {e}", file=sys.stderr)
         return
+    
+    if image:
+        icon = (getImageUrl(feed))
+        # Download the podcast image if it exists
+        if icon:
+            icon_path = os.path.join(download_folder, "icon.jpg")
+            if not os.path.exists(icon_path):
+                try:
+                    response = requests.get(icon, headers=headers, stream=True)
+                    if response.status_code == 200:
+                        with open(icon_path, "wb") as icon_file:
+                            for chunk in response.iter_content(chunk_size=1024):
+                                icon_file.write(chunk)
+                        print(f"[{folder_name}] Podcast image downloaded: {icon_path}", file=sys.stderr)
+                    else:
+                        print(f"[{folder_name}] Failed to download podcast image. HTTP Status Code: {response.status_code}", file=sys.stderr)
+                except requests.exceptions.RequestException as e:
+                    print(f"[{folder_name}] Error downloading podcast image: {e}", file=sys.stderr)
+            else:
+                print(f"[{folder_name}] Podcast image already exists: {icon_path}", file=sys.stderr)
 
     # Check if the feed has entries
     if not feed.entries:
@@ -212,6 +271,8 @@ def parse_args():
 
     parser.add_argument("-d", "--dryrun", help="all talk and no action", action="store_true")
 
+    parser.add_argument("-i", "--image", help="get the podcast image", action="store_true")
+
 
     
     args = parser.parse_args()
@@ -256,4 +317,5 @@ lang = conf.get("lang", "ja")   # Default to Japanese if not specified in config
 
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
-download(rss_feed_url, lang, download_folder, latest, relative, first, last, getattr(args,"transcribe"), getattr(args,"sync"), getattr(args,"dryrun"), getattr(args, "complete"))
+download(rss_feed_url, lang, download_folder, latest, relative, first, last, getattr(args,"transcribe"), 
+         getattr(args,"sync"), getattr(args,"dryrun"),  getattr(args, "image"), getattr(args, "complete"))

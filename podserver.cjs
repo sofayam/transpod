@@ -441,7 +441,24 @@ app.get("/seltest", (req, res) => {
 })
 
 
-
+app.get("/geticon", (req, res) => { 
+    const podName = req.query.pod;
+    const iconPath = path.join(__dirname, "content", podName, "icon.jpg-64x64.jpg");
+    if (fs.existsSync(iconPath)) {
+        res.type('image/jpeg');
+        res.sendFile(iconPath);
+    } else {
+        // Send the default podcast icon
+        const defaultIconPath = path.join(__dirname, "content", "default.svg");
+        if (fs.existsSync(defaultIconPath)) {
+            res.type('image/svg+xml');
+            res.sendFile(defaultIconPath);
+        } else {
+            res.status(404).send("Icon not found");
+        }
+    }
+})
+        
 
 
 app.get("/getNew", (req, res) => {
