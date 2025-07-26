@@ -1,3 +1,9 @@
+# adding icons to new feeds 
+
+
+use the -i argument on getpodcasts, then use shrinkicons.sh to make them smaller (Needs to be better automated)
+
+
 # where to find new feeds
 
 listennotes.com
