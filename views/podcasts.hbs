@@ -26,29 +26,34 @@
 
         <div class="table">
             {{#each pods}}
-        <div class="table-row">
-            <div class="col folder-name"><a href="/pod/{{this.name}}">{{this.name}}</a></div>
-            <div class="col">
-                <select class="order" data-folder="{{this.name}}">
-                    <option value="oldest" {{#if (eq this.order "oldest")}}selected{{/if}}>⏳↓</option>
-                    <option value="latest" {{#if (eq this.order "latest")}}selected{{/if}}>⌛↑</option>
-                </select>
+            <div class="table-row" style="display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee;">
+                <div class="col" style="padding-left: 5px; padding-right: 10px;">
+                    <a href="/pod/{{this.name}}">
+                        <img src="/geticon?pod={{this.name}}" alt="{{this.name}} icon" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; vertical-align: middle;">
+                    </a>
+                </div>
+                <div class="col folder-name" style="flex-grow: 1;"><a href="/pod/{{this.name}}">{{this.name}}</a></div>
+                <div class="col">
+                    <select class="order" data-folder="{{this.name}}">
+                        <option value="oldest" {{#if (eq this.order "oldest")}}selected{{/if}}>⏳↓</option>
+                        <option value="latest" {{#if (eq this.order "latest")}}selected{{/if}}>⌛↑</option>
+                    </select>
+                </div>
+                <div class="col">
+                    <select class="show" data-folder="{{this.name}}">
+                        <option value="all" {{#if (eq this.show "all")}}selected{{/if}}>🔴+✅</option>
+                        <option value="unfinished" {{#if (eq this.show "unfinished")}}selected{{/if}}>🔴</option>
+                    </select>
+                </div>
+                <div class="col" style="padding-right: 5px;">
+                    <select class="coreset" data-folder="{{this.name}}">
+                        <option value="false" {{#if (eq this.coreset "false")}}selected{{/if}}>All</option>
+                        <option value="true" {{#if (eq this.coreset "true")}}selected{{/if}}>Core</option>
+                    </select>
+                </div>
             </div>
-            <div class="col">
-                <select class="show" data-folder="{{this.name}}">
-                    <option value="all" {{#if (eq this.show "all")}}selected{{/if}}>🔴+✅</option>
-                    <option value="unfinished" {{#if (eq this.show "unfinished")}}selected{{/if}}>🔴</option>
-                </select>
-            </div>
-            <div class="col">
-                <select class="coreset" data-folder="{{this.name}}">
-                    <option value="false" {{#if (eq this.coreset "false")}}selected{{/if}}>All</option>
-                    <option value="true" {{#if (eq this.coreset "true")}}selected{{/if}}>Core</option>
-                </select>
-            </div>
+            {{/each}}
         </div>
-        {{/each}}
-    </div>
 
 </div>
 <div class="link-container">

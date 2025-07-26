@@ -43,7 +43,10 @@
 
     Return to podcast list: <button id="top">⏫</button>
 
-    <h1>Choose an episode of {{pod}}</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>Choose an episode of {{pod}}</h1>
+      <img src="/geticon?pod={{pod}}" style="height: 64px; width: 64px;"/>
+    </div>
 
     <div class="controls">
         <select id="order">
