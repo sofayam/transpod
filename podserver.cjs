@@ -121,7 +121,8 @@ const getLanguages = () => {
 };
 
 app.get("/", (req, res, next) => {
-    const selectedLanguage = req.query.language || 'all';
+    const metaGlobal = readMetaGlobal();
+    const selectedLanguage = metaGlobal.language || 'all';
     let contents = getPods(false, selectedLanguage)
     let pcData = []
     contents.forEach(file => {
@@ -130,7 +131,6 @@ app.get("/", (req, res, next) => {
         podEntry = { name: file, ...meta }
         pcData.push(podEntry)
     })
-    metaGlobal = readMetaGlobal()
     const languages = getLanguages();
     res.render("podcasts", { pods: pcData, layout: false, coresetOnly: metaGlobal.coresetOnly, languages, selectedLanguage })
 })
@@ -637,9 +637,17 @@ function writeMetaPod(folderName, order, show, coreset) {
     }
 }
 
-function writeMetaGlobal(coresetOnly) {
+function writeMetaGlobal(coresetOnly, language) {
     const metaPath = path.join(__dirname, "content/_global.meta");
-    const metaData = { coresetOnly };
+    const metaData = readMetaGlobal();
+
+    if (coresetOnly !== undefined) {
+        metaData.coresetOnly = coresetOnly;
+    }
+    if (language !== undefined) {
+        metaData.language = language;
+    }
+
     try {
         fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');
         console.log(`Updated global meta file: ${metaPath}`);
@@ -683,9 +691,9 @@ app.post('/update-meta-pod', (req, res) => {
 
 app.post('/update-meta-global', (req, res) => {
 
-    const { coresetOnly } = req.body;
+    const { coresetOnly, language } = req.body;
     try {
-        writeMetaGlobal(coresetOnly);
+        writeMetaGlobal(coresetOnly, language);
         res.json({ success: true });
     } catch (error) {
         res.status(400).json({ success: false, message: "Error storing global metadata" });

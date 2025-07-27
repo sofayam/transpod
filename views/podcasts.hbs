@@ -68,11 +68,6 @@
 </div>
 
 <script>
-    document.getElementById('language-select').addEventListener('change', function() {
-        const selectedLanguage = this.value;
-        window.location.href = `/?language=${selectedLanguage}`;
-    });
-
     window.addEventListener("load", function () {
         const lastPage = localStorage.getItem("lastPage");
         if (lastPage) {
@@ -82,6 +77,27 @@
     document.addEventListener("DOMContentLoaded", function () {
 
         const coreSetChoice = document.getElementById("coreSetChoice");
+        const languageSelect = document.getElementById("language-select");
+
+        languageSelect.addEventListener("change", function () {
+            const selectedValue = languageSelect.value;
+
+            fetch("/update-meta-global", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ language: selectedValue })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert(`Error: ${data.message}`);
+                    } else {
+                        console.log(`Language updated to: ${selectedValue}`);
+                        location.reload(); // Reload the page to reflect changes
+                    }
+                })
+                .catch(error => console.error("Fetch error:", error));
+        });
 
         coreSetChoice.addEventListener("change", function () {
             const selectedValue = coreSetChoice.value;

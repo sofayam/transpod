@@ -1,3 +1,7 @@
+# find who is using the port
+
+❯ lsof -i :8014
+
 # adding icons to new feeds 
 
 
