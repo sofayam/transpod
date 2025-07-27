@@ -231,21 +231,28 @@ function isUnfinished(podName, epName) {
 }
 
 function getNextep(ep) {
-    if (!orderList)
-        return
-    let epData = orderList
-    let found = false
-    let nextep = ""
-    epData.forEach(item => {
-        if (found) {
-            nextep = item.displayname
-            found = false
-        }
-        if (item.displayname === ep) {
-            found = true
-        }
-    })
-    return nextep
+    if (!orderList || orderList.length === 0) {
+        return null; // No episodes available
+    }
+
+    // Find the index of the current episode
+    const currentIndex = orderList.findIndex(item => item.displayname === ep);
+
+    if (currentIndex === -1) {
+        return null; // Episode not found
+    }
+
+    // Determine the next episode based on the sorting order
+    const meta = readMetaPod(orderList[0].podName); // Assuming all episodes belong to the same podcast
+    const isLatestFirst = meta && meta.order === "latest";
+
+    if (isLatestFirst) {
+        // If sorted latest first, the "next" episode is the previous one in the list
+        return currentIndex > 0 ? orderList[currentIndex - 1].displayname : null;
+    } else {
+        // If sorted oldest first, the "next" episode is the next one in the list
+        return currentIndex < orderList.length - 1 ? orderList[currentIndex + 1].displayname : null;
+    }
 }
 
 app.get("/play/:pod/:ep", (req, res, next) => {
