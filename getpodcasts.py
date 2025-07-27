@@ -59,8 +59,34 @@ def getImageUrl(feed: FeedParserDict) -> str:
 
     return ""
 
+
+def save_podcast_metadata(feed, download_folder):
+    """
+    Extracts general podcast metadata from the RSS feed and saves it as a JSON file.
+    """
+    # Extract general podcast information
+    podcast_metadata = {
+        "title": feed.feed.get("title", "Unknown Title"),
+        "description": feed.feed.get("description", "No description available"),
+        "language": feed.feed.get("language", "Unknown Language"),
+        "author": feed.feed.get("author", "Unknown Author"),
+        "link": feed.feed.get("link", ""),
+        "image_url": getImageUrl(feed),  # Reuse the getImageUrl function
+        "last_updated": feed.feed.get("updated", ""),
+    }
+
+    # Define the path for the metadata JSON file
+    metadata_file_path = os.path.join(download_folder, "_rssmetadata.md")
+
+    # Save the metadata to a JSON file
+    with open(metadata_file_path, "w", encoding="utf-8") as metadata_file:
+        json.dump(podcast_metadata, metadata_file, ensure_ascii=False, indent=4)
+
+    print(f"[{os.path.basename(download_folder)}] Podcast metadata saved to {metadata_file_path}", file=sys.stderr)
+
+
 # Function to download the latest podcast
-def download(rss_feed_url, lang, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun, image, complete_n=None):
+def download(rss_feed_url, lang, download_folder, latest, relative, first, last, transcribeAsWell, sync, dryrun, image, save_meta, complete_n=None):
     # Ensure the download folder exists
     os.makedirs(download_folder, exist_ok=True)
 
@@ -144,6 +170,10 @@ def download(rss_feed_url, lang, download_folder, latest, relative, first, last,
                     print(f"[{folder_name}] Error downloading podcast image: {e}", file=sys.stderr)
             else:
                 print(f"[{folder_name}] Podcast image already exists: {icon_path}", file=sys.stderr)
+
+    # Save podcast metadata
+    if save_meta:
+        save_podcast_metadata(feed, download_folder)
 
     # Check if the feed has entries
     if not feed.entries:
@@ -273,7 +303,7 @@ def parse_args():
 
     parser.add_argument("-i", "--image", help="get the podcast image", action="store_true")
 
-
+    parser.add_argument("-m", "--save_meta", help="save podcast metadata from feed", action="store_true")
     
     args = parser.parse_args()
 
@@ -318,4 +348,5 @@ lang = conf.get("lang", "ja")   # Default to Japanese if not specified in config
 # rss_feed_url = open(feedfile).read()
 download_folder = feedfolder
 download(rss_feed_url, lang, download_folder, latest, relative, first, last, getattr(args,"transcribe"), 
-         getattr(args,"sync"), getattr(args,"dryrun"),  getattr(args, "image"), getattr(args, "complete"))
+         getattr(args,"sync"), getattr(args,"dryrun"),  getattr(args, "image"), getattr(args, "save_meta"), 
+         getattr(args, "complete"))
