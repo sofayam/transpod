@@ -263,9 +263,15 @@
          
                         const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
                     
-                        const langName = displayNames.of(lang)
+                        const langName = displayNames.of(lang);
 
-                        const url = `https://en.wiktionary.org/wiki/${cleanWord}#${langName}`;
+                        let url = ""
+                        if (lang == "ja") {
+                            url = `https://jisho.org/search/${cleanWord}`;
+                        } else {
+                            // Use Wiktionary for other languages
+                            url = `https://en.wiktionary.org/wiki/${cleanWord}#${langName}`;
+                        }
                         window.open(url, '_blank');
                     }
                 }
