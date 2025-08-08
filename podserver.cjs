@@ -741,12 +741,21 @@ app.get("/search", (req, res) => {
     }
     const podcasts = getPods(true, language);
 
+    res.render("search", { layout: false, languages, query, language, podcasts, selectedPodcast: podcast });
+});
+
+app.get("/search-stream", (req, res) => {
+    let { query, language, podcast } = req.query;
+
     if (!query) {
-        // Render the search page if no query is provided
-        return res.render("search", { layout: false, languages, query, language, podcasts, selectedPodcast: podcast });
+        return res.status(400).end('Missing query parameter');
     }
 
-    const results = [];
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
     const contentPath = path.join(__dirname, "content");
 
     let podDirsToSearch = getPods(true, language);
@@ -754,67 +763,64 @@ app.get("/search", (req, res) => {
         podDirsToSearch = [podcast];
     }
 
+    const performSearch = async () => {
+        let resultCount = 0;
+        for (const podDir of podDirsToSearch) {
+            if (req.aborted) break;
+            if (resultCount >= 100) break;
 
-    for (const podDir of podDirsToSearch) {
-        //    if (results.length >= 100) break;
+            const podPath = path.join(contentPath, podDir);
+            console.log(`Searching in podcast: ${podDir} (${podPath})`);
+            const files = fs.readdirSync(podPath);
+            for (const file of files) {
+                if (req.aborted) break;
+                if (resultCount >= 100) break;
 
-        const podPath = path.join(contentPath, podDir);
-        console.log(`Searching in podcast: ${podDir} (${podPath})`);
-        const files = fs.readdirSync(podPath);
-        for (const file of files) {
-            if (results.length >= 100) break;
+                if (file.endsWith(".json")) {
+                    const baseName = file.slice(0, -5);
+                    const mp3Path = path.join(podPath, baseName + ".mp3");
 
-            if (file.endsWith(".json")) {
-                const baseName = file.slice(0, -5);
-                const mp3Path = path.join(podPath, baseName + ".mp3");
+                    if (fs.existsSync(mp3Path)) {
+                        try {
+                            const transcriptData = getTranscript(podDir, baseName);
+                            const transcript = JSON.parse(transcriptData.text);
+                            for (const segment of transcript) {
+                                if (req.aborted) break;
+                                if (resultCount >= 100) break;
 
-                if (fs.existsSync(mp3Path)) {
-                    try {
-                        const transcriptData = getTranscript(podDir, baseName);
-                        const transcript = JSON.parse(transcriptData.text);
-                        for (const segment of transcript) {
-                            if (results.length >= 100) break;
-
-                            const normalizedText = segment.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                            const normalizedQuery = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                            if (segment.text && normalizedText.toLowerCase().includes(normalizedQuery.toLowerCase())) {
-                                results.push({
-                                    podcast: podDir,
-                                    file: baseName,
-                                    encodedFile: encodeURIComponent(baseName),
-                                    start: segment.start,
-                                    text: segment.text.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`)
-                                });
+                                const normalizedText = segment.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                                const normalizedQuery = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                                if (segment.text && normalizedText.toLowerCase().includes(normalizedQuery.toLowerCase())) {
+                                    const result = {
+                                        podcast: podDir,
+                                        file: baseName,
+                                        encodedFile: encodeURIComponent(baseName),
+                                        start: segment.start,
+                                        text: segment.text.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`)
+                                    };
+                                    res.write(`data: ${JSON.stringify(result)}\n\n`);
+                                    resultCount++;
+                                }
                             }
+                        } catch (error) {
+                            console.error(`Error processing transcript for ${podDir}/${baseName}:`, error);
                         }
-                    } catch (error) {
-                        console.error(`Error processing transcript for ${podDir}/${baseName}:`, error);
                     }
                 }
             }
         }
-    }
-
-    const groupedResults = results.reduce((acc, result) => {
-        const key = `${result.podcast}|${result.file}`;
-        if (!acc[key]) {
-            acc[key] = {
-                podcast: result.podcast,
-                file: result.file,
-                encodedFile: result.encodedFile,
-                hits: []
-            };
+        if (!req.aborted) {
+            res.write('data: {"event": "done"}\n\n');
+            res.end();
         }
-        acc[key].hits.push({
-            start: result.start,
-            text: result.text
-        });
-        return acc;
-    }, {});
+    };
 
-    const finalResults = Object.values(groupedResults);
+    performSearch();
 
-    res.render("search", { layout: false, languages, results: JSON.stringify(finalResults), query, language, podcasts, selectedPodcast: podcast });
+    req.on('close', () => {
+        console.log('Client closed connection during search stream');
+        res.end();
+    });
 });
 
 app.use(express.static("public"))
