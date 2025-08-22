@@ -208,7 +208,7 @@ def index_podcasts(content_dir, db_path, log_path, limit_files=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Index podcast transcripts into an SQLite database.')
     parser.add_argument('--content_dir', type=str, default='content', help='The directory containing the podcast content.')
-    parser.add_argument('--db_path', type=str, default='concordance.db', help='The path to the SQLite database file.')
+    parser.add_argument('--db_path', type=str, default='content/concordance.db', help='The path to the SQLite database file.')
     parser.add_argument('--log_path', type=str, default='rejected_segments.log', help='The path to the log file for rejected segments.')
     parser.add_argument('--limit-files', type=int, help='Limit the number of files to process for testing.')
     args = parser.parse_args()

@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="/css/playtranspwa.css">
 </head>
 <body>
+    <div id="back-to-search-container" style="display: none; padding: 10px;">
+        <a href="#" onclick="history.back(); return false;" style="text-decoration: none; font-size: 1.2em;">&larr; Back to Search</a>
+    </div>
+    <div id="title" class="title-bar"></div>
     <!-- Top button bar -->
     <div class="button-bar" id="audio-container">
         <div> <span id=podtitle2></span></div>
@@ -86,6 +90,15 @@
         window.addEventListener("load", adjustPadding);
         window.addEventListener("resize", adjustPadding);
         document.addEventListener("DOMContentLoaded", () => {
+
+            // Show back button if coming from search
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('from') === 'search') {
+                const backButtonContainer = document.getElementById('back-to-search-container');
+                if (backButtonContainer) {
+                    backButtonContainer.style.display = 'block';
+                }
+            }
 
 
             let timeLastOpened = new Date()

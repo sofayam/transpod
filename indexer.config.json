@@ -1,5 +1,5 @@
 {
     "INDEXLANGUAGES": ["ja"],
-    "REFMAX": 100,
+    "REFMAX": 1000,
     "REPMAX": 5
 }

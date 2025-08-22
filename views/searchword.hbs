@@ -15,6 +15,18 @@
     </style>
 </head>
 <body>
+    <script>
+      window.onload = function(){
+      const topBtn = document.getElementById("top");
+      topBtn.addEventListener("click", () => {
+            localStorage.setItem("lastPage", "")
+            window.location.href = "/"
+        });
+      }
+    </script>
+
+    Return to podcast list: <button id="top">⏫</button>
+
     <h1>Search for a Word in Transcripts</h1>
 
     <form action="/searchword" method="post">

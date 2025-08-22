@@ -709,120 +709,6 @@ app.post('/update-meta-global', (req, res) => {
 });
 
 
-app.get("/search", (req, res) => {
-    let { query, language, podcast } = req.query;
-
-    // Function to get all available languages
-    const getLanguages = () => {
-        const contentPath = path.join(__dirname, "content");
-        const podDirs = fs.readdirSync(contentPath, { withFileTypes: true })
-            .filter(dirent => dirent.isDirectory())
-            .map(dirent => dirent.name);
-
-        const languages = new Set(['ja']);
-        podDirs.forEach(podDir => {
-            const configPath = path.join(contentPath, podDir, "_config.md");
-            if (fs.existsSync(configPath)) {
-                try {
-                    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-                    if (config.lang) {
-                        languages.add(config.lang);
-                    }
-                } catch (error) {
-                    console.error(`Error reading or parsing ${configPath}:`, error);
-                }
-            }
-        });
-        return Array.from(languages).sort();
-    };
-
-    const languages = getLanguages();
-    if (!language && languages.length > 0) {
-        language = languages[0];
-    }
-    const podcasts = getPods(true, language);
-
-    res.render("search", { layout: false, languages, query, language, podcasts, selectedPodcast: podcast });
-});
-
-app.get("/search-stream", (req, res) => {
-    let { query, language, podcast } = req.query;
-
-    if (!query) {
-        return res.status(400).end('Missing query parameter');
-    }
-
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
-    const contentPath = path.join(__dirname, "content");
-
-    let podDirsToSearch = getPods(true, language);
-    if (podcast && podcast !== 'all') {
-        podDirsToSearch = [podcast];
-    }
-
-    const performSearch = async () => {
-        let resultCount = 0;
-        for (const podDir of podDirsToSearch) {
-            if (req.aborted) break;
-            if (resultCount >= 100) break;
-
-            const podPath = path.join(contentPath, podDir);
-            console.log(`Searching in podcast: ${podDir} (${podPath})`);
-            const files = fs.readdirSync(podPath);
-            for (const file of files) {
-                if (req.aborted) break;
-                if (resultCount >= 100) break;
-
-                if (file.endsWith(".json")) {
-                    const baseName = file.slice(0, -5);
-                    const mp3Path = path.join(podPath, baseName + ".mp3");
-
-                    if (fs.existsSync(mp3Path)) {
-                        try {
-                            const transcriptData = getTranscript(podDir, baseName);
-                            const transcript = JSON.parse(transcriptData.text);
-                            for (const segment of transcript) {
-                                if (req.aborted) break;
-                                if (resultCount >= 100) break;
-
-                                const normalizedText = segment.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                                const normalizedQuery = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                                if (segment.text && normalizedText.toLowerCase().includes(normalizedQuery.toLowerCase())) {
-                                    const result = {
-                                        podcast: podDir,
-                                        file: baseName,
-                                        encodedFile: encodeURIComponent(baseName),
-                                        start: segment.start,
-                                        text: segment.text.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`)
-                                    };
-                                    res.write(`data: ${JSON.stringify(result)}\n\n`);
-                                    resultCount++;
-                                }
-                            }
-                        } catch (error) {
-                            console.error(`Error processing transcript for ${podDir}/${baseName}:`, error);
-                        }
-                    }
-                }
-            }
-        }
-        if (!req.aborted) {
-            res.write('data: {"event": "done"}\n\n');
-            res.end();
-        }
-    };
-
-    performSearch();
-
-    req.on('close', () => {
-        console.log('Client closed connection during search stream');
-        res.end();
-    });
-});
 
 app.use(express.static("public"))
 app.use(express.static("content"))
@@ -877,47 +763,6 @@ const getTranscript = (pod, ep) => {
     return { src: source, text: transcripttext }
 }
 
-const getTranscriptOld = (pod, ep) => {
-    // 1 Is there an html transcript
-    //    1.1 Derive canonical index
-    // const match = ep.match(/^#(\d+)/)
-    const { match, index } = getIndex(ep)
-    paddedNumber = ""
-    transfolder = ""
-    let source = "whisper"
-    foundtranscript = false
-    transcripttext = ""
-
-    if (match) {
-
-        //    1.2 Look for file containing canonical index in transcripts folder
-
-        transfolder = path.join(__dirname, "content", pod, "transcripts")
-        if (fs.existsSync(transfolder)) {
-            const res = findFileInDirectory(transfolder, index)
-            if (res.length == 1) {
-                foundtranscript = res[0]
-            }
-        }
-
-        // 2 If so convert to json and use that
-    }
-    if (foundtranscript) {
-        source = "patreon"
-        transcripttext = transhtml(path.join(transfolder, foundtranscript))
-    } else {
-        // 3 Else use the whisper thing from the json file
-        transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
-        try {
-            transcripttext = fs.readFileSync(transcriptfile, 'utf-8')
-        } catch (error) {
-            console.log("no transcript found, defaulting to polite apology")
-            transcripttext = '[{ "start": 0.0, "end": 10000.0, "text": "申し訳ありませんが、このエピソードのトランスクリプトはまだ利用できません。"}]'
-        }
-    }
-
-    return { src: source, text: transcripttext }
-}
 
 const transhtml = (fname) => {
     const html = fs.readFileSync(fname, 'utf8');
@@ -1175,7 +1020,7 @@ app.get("/debug-db", (req, res) => {
 });
 
 // Initialize concordance SQLite database
-const concordanceDb = new sqlite3.Database(path.join(__dirname, 'concordance.db'), (err) => {
+const concordanceDb = new sqlite3.Database(path.join(__dirname, 'content/concordance.db'), (err) => {
     if (err) {
         console.error('Error opening concordance database:', err.message);
     } else {
@@ -1265,7 +1110,7 @@ app.post("/searchword", (req, res) => {
 
                 episode.segments = episode.segments.map(segment => {
                     const encodedEpisodeName = encodeURIComponent(episode.episodeName);
-                    segment.playUrl = `/play/${podName}/${encodedEpisodeName}?t=${segment.start}`;
+                    segment.playUrl = `/play/${podName}/${encodedEpisodeName}?t=${segment.start}&from=search`;
                     return segment;
                 });
                 return episode;
