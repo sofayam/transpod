@@ -1246,15 +1246,44 @@ app.post("/searchword", (req, res) => {
 
         // Convert groupedResults object to an array for Handlebars iteration
         const resultsArray = Object.values(groupedResults).map(podcast => {
+            const podName = podcast.podcastName;
+            const meta = readMetaPod(podName);
+
             podcast.episodes = Object.values(podcast.episodes).map(episode => {
+                // Read episode info for sorting
+                let info = {};
+                const infoPath = path.join(__dirname, "content", podName, episode.episodeName + ".info");
+                if (fs.existsSync(infoPath)) {
+                    try {
+                        info = JSON.parse(fs.readFileSync(infoPath, 'utf-8'));
+                    } catch (e) {
+                        console.error(`Error reading info file for ${podName}/${episode.episodeName}:`, e);
+                    }
+                }
+                episode.info = info; // Attach info for sorting
+                episode.displayname = episode.episodeName; // Add displayname for compareEpisode
+
                 episode.segments = episode.segments.map(segment => {
-                    // Add the playUrl here
                     const encodedEpisodeName = encodeURIComponent(episode.episodeName);
-                    segment.playUrl = `/play/${podcast.podcastName}/${encodedEpisodeName}?t=${segment.start}`;
+                    segment.playUrl = `/play/${podName}/${encodedEpisodeName}?t=${segment.start}`;
                     return segment;
                 });
                 return episode;
             });
+
+            // Apply sorting logic: always oldest first
+            const episodesWithPublishedParsed = podcast.episodes.filter(item => item.info && item.info.published_parsed);
+            const episodesWithoutPublishedParsed = podcast.episodes.filter(item => !(item.info && item.info.published_parsed));
+
+            // Sort episodes with published_parsed
+            episodesWithPublishedParsed.sort((a, b) => comparePublishedParsed(a.info.published_parsed, b.info.published_parsed));
+
+            // Sort episodes without published_parsed using compareEpisode
+            episodesWithoutPublishedParsed.sort((a, b) => compareEpisode(a, b));
+
+            // Concatenate them, putting those with published_parsed first
+            podcast.episodes = episodesWithPublishedParsed.concat(episodesWithoutPublishedParsed);
+
             return podcast;
         });
 
