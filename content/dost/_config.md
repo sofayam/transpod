@@ -1,6 +1,6 @@
 {
     "feed": "https://anchor.fm/s/3d922240/podcast/rss",
-    "live": 1,
+    "live": 0,
     "lang": "hi",
     "sortInfo": 1
 }
