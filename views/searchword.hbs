@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Word</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        form { margin-bottom: 20px; }
+        input[type="text"] { padding: 8px; width: 300px; }
+        input[type="submit"] { padding: 8px 15px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+        .podcast-group { border: 1px solid #ccc; margin-bottom: 15px; padding: 10px; border-radius: 5px; }
+        .episode-group { border-left: 3px solid #007bff; padding-left: 10px; margin-top: 10px; }
+        .segment { margin-bottom: 5px; }
+        .segment-time { font-weight: bold; color: #555; }
+        mark { background-color: yellow; }
+    </style>
+</head>
+<body>
+    <h1>Search for a Word in Transcripts</h1>
+
+    <form action="/searchword" method="post">
+        <label for="word">Word:</label>
+        <input type="text" id="word" name="word" value="{{query}}" placeholder="Enter word to search">
+        <input type="submit" value="Search">
+    </form>
+
+    {{#if message}}
+        <p style="color: red;">{{message}}</p>
+    {{/if}}
+
+    {{#if results}}
+        <h2>Search Results for "{{query}}"</h2>
+        {{#if results.length}}
+            {{#each results}}
+                <div class="podcast-group">
+                    <h3>Podcast: {{podcastName}}</h3>
+                    {{#each episodes}}
+                        <div class="episode-group">
+                            <h4>Episode: {{episodeName}}</h4>
+                            {{#each segments}}
+                                <div class="segment">
+                                    <span class="segment-time">{{formatTimestamp start}} - {{formatTimestamp end}}:</span>
+                                    {{{text}}}
+                                </div>
+                            {{/each}}
+                        </div>
+                    {{/each}}
+                </div>
+            {{/each}}
+        {{else}}
+            <p>No results found for "{{query}}".</p>
+        {{/if}}
+    {{/if}}
+
+    <script>
+        // Helper function for formatting timestamp (if not already available via Handlebars helper)
+        function formatTimestamp(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            return `${minutes}:${String(seconds).padStart(2, '0')}`;
+        }
+    </script>
+</body>
+</html>

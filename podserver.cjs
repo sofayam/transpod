@@ -55,6 +55,7 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
 function getPods(forceAll = false, language = 'all') {
 
@@ -1170,6 +1171,86 @@ app.get("/debug-db", (req, res) => {
             return;
         }
         res.json(rows);
+    });
+});
+
+// Initialize concordance SQLite database
+const concordanceDb = new sqlite3.Database(path.join(__dirname, 'concordance.db'), (err) => {
+    if (err) {
+        console.error('Error opening concordance database:', err.message);
+    } else {
+        console.log('Connected to concordance database.');
+    }
+});
+
+app.get("/searchword", (req, res) => {
+    res.render("searchword", { layout: false, query: "", results: null });
+});
+
+app.post("/searchword", (req, res) => {
+    const queryWord = req.body.word;
+
+    if (!queryWord) {
+        return res.render("searchword", { layout: false, query: "", results: null, message: "Please enter a word to search." });
+    }
+
+    const sql = `
+        SELECT
+            p.name AS podcast_name,
+            e.name AS episode_name,
+            s.start_time,
+            s.end_time,
+            s.text AS segment_text
+        FROM
+            words w
+        JOIN
+            entries en ON w.id = en.word_id
+        JOIN
+            segments s ON en.segment_id = s.id
+        JOIN
+            episodes e ON s.episode_id = e.id
+        JOIN
+            podcasts p ON e.podcast_id = p.id
+        WHERE
+            w.word = ? COLLATE NOCASE;
+    `;
+
+    concordanceDb.all(sql, [queryWord], (err, rows) => {
+        if (err) {
+            console.error('Error querying concordance database:', err.message);
+            return res.status(500).send("Error performing search.");
+        }
+
+        const groupedResults = {};
+        rows.forEach(row => {
+            if (!groupedResults[row.podcast_name]) {
+                groupedResults[row.podcast_name] = {
+                    podcastName: row.podcast_name,
+                    episodes: {}
+                };
+            }
+            if (!groupedResults[row.podcast_name].episodes[row.episode_name]) {
+                groupedResults[row.podcast_name].episodes[row.episode_name] = {
+                    episodeName: row.episode_name,
+                    segments: []
+                };
+            }
+            // Highlight the search word in the segment text
+            const highlightedText = row.segment_text.replace(new RegExp(queryWord, 'gi'), (match) => `<mark>${match}</mark>`);
+            groupedResults[row.podcast_name].episodes[row.episode_name].segments.push({
+                start: row.start_time,
+                end: row.end_time,
+                text: highlightedText
+            });
+        });
+
+        // Convert groupedResults object to an array for Handlebars iteration
+        const resultsArray = Object.values(groupedResults).map(podcast => {
+            podcast.episodes = Object.values(podcast.episodes);
+            return podcast;
+        });
+
+        res.render("searchword", { layout: false, query: queryWord, results: resultsArray });
     });
 });
 

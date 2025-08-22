@@ -53,6 +53,32 @@ def has_consecutive_repetitions(words, max_repetitions):
 def create_database_schema(cursor):
     """Creates the database schema."""
     cursor.execute('''
+        CREATE TABLE IF NOT EXISTS podcasts (
+            id INTEGER PRIMARY KEY,
+            name TEXT UNIQUE,
+            language TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS episodes (
+            id INTEGER PRIMARY KEY,
+            podcast_id INTEGER,
+            name TEXT,
+            FOREIGN KEY(podcast_id) REFERENCES podcasts(id),
+            UNIQUE(podcast_id, name)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS segments (
+            id INTEGER PRIMARY KEY,
+            episode_id INTEGER,
+            start_time REAL,
+            end_time REAL,
+            text TEXT,
+            FOREIGN KEY(episode_id) REFERENCES episodes(id)
+        )
+    ''')
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS words (
             id INTEGER PRIMARY KEY,
             word TEXT UNIQUE,
@@ -61,15 +87,11 @@ def create_database_schema(cursor):
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS entries (
-            id INTEGER PRIMARY KEY,
             word_id INTEGER,
-            language TEXT,
-            podcast_name TEXT,
-            episode_name TEXT,
-            start_time REAL,
-            end_time REAL,
-            full_text TEXT,
-            FOREIGN KEY(word_id) REFERENCES words(id)
+            segment_id INTEGER,
+            FOREIGN KEY(word_id) REFERENCES words(id),
+            FOREIGN KEY(segment_id) REFERENCES segments(id),
+            PRIMARY KEY (word_id, segment_id)
         )
     ''')
 
@@ -89,6 +111,11 @@ def index_podcasts(content_dir, db_path, log_path, limit_files=None):
             if not lang or lang not in INDEXLANGUAGES:
                 continue
 
+            # Get or create podcast entry
+            cursor.execute("INSERT OR IGNORE INTO podcasts (name, language) VALUES (?, ?)", (podcast_name, lang))
+            cursor.execute("SELECT id FROM podcasts WHERE name = ?", (podcast_name,))
+            podcast_id = cursor.fetchone()[0]
+
             print(f"Indexing podcast: {podcast_name} ({lang})")
 
             files_to_process = [f for f in os.listdir(podcast_dir) if f.endswith('.json')]
@@ -106,18 +133,21 @@ def index_podcasts(content_dir, db_path, log_path, limit_files=None):
                 episode_name = base_name
                 file_path = os.path.join(podcast_dir, file_name)
 
-                # Check if the episode has already been indexed
-                cursor.execute("SELECT id FROM entries WHERE podcast_name = ? AND episode_name = ? LIMIT 1", (podcast_name, episode_name))
+                # Get or create episode entry
+                cursor.execute("INSERT OR IGNORE INTO episodes (podcast_id, name) VALUES (?, ?)", (podcast_id, episode_name))
+                cursor.execute("SELECT id FROM episodes WHERE podcast_id = ? AND name = ?", (podcast_id, episode_name))
+                episode_id = cursor.fetchone()[0]
+
+                # Check if the episode has already been indexed (by checking if any segments exist for it)
+                cursor.execute("SELECT id FROM segments WHERE episode_id = ? LIMIT 1", (episode_id,))
                 if cursor.fetchone():
                     print(f"Skipping already indexed episode: {podcast_name}/{episode_name}")
                     continue
 
                 with open(file_path, 'r', encoding='utf-8') as f:
                     try:
-                        segments = json.load(f)
-                        #for segment in segments:
-                        #    print(f"------> Found {len(segments)} segments.")
-                        for segment in segments:
+                        segments_data = json.load(f)
+                        for segment in segments_data:
                             text = segment.get('text', '')
                             
                             if lang == 'ja':
@@ -130,30 +160,41 @@ def index_podcasts(content_dir, db_path, log_path, limit_files=None):
                                 log_file.write(f"Rejected segment in {file_path}: {text}\n")
                                 continue
 
-                            for word in words:
+                            # Insert segment
+                            cursor.execute('''
+                                INSERT INTO segments (episode_id, start_time, end_time, text)
+                                VALUES (?, ?, ?, ?)
+                            ''', (episode_id, segment.get('start'), segment.get('end'), text))
+                            segment_id = cursor.lastrowid
+
+                            processed_words_in_segment = set()
+
+                            for word in words: # 'words' is the list of all tokens in the segment
                                 normalized_word = word.lower()
+
+                                # Only process this word for entries if it hasn't been processed yet for this segment
+                                if normalized_word in processed_words_in_segment:
+                                    continue
+                                processed_words_in_segment.add(normalized_word)
 
                                 # Get word_id, creating the word if it doesn't exist
                                 cursor.execute("SELECT id, occurrences FROM words WHERE word = ?", (normalized_word,))
                                 result = cursor.fetchone()
                                 if result:
-                                    word_id, occurrences = result
+                                    word_id, current_entries_count = result
                                 else:
                                     cursor.execute("INSERT INTO words (word, occurrences) VALUES (?, 0)", (normalized_word,))
                                     word_id = cursor.lastrowid
-                                    occurrences = 0
+                                    current_entries_count = 0
 
-                                # Check REFMAX
-                                if occurrences >= REFMAX:
+                                # Check REFMAX: if the word already has REFMAX entries, skip adding another entry
+                                if current_entries_count >= REFMAX:
                                     continue
 
-                                # Add the entry
-                                cursor.execute('''
-                                    INSERT INTO entries (word_id, language, podcast_name, episode_name, start_time, end_time, full_text)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                                ''', (word_id, lang, podcast_name, episode_name, segment.get('start'), segment.get('end'), text))
+                                # Add the entry (word_id, segment_id)
+                                cursor.execute("INSERT INTO entries (word_id, segment_id) VALUES (?, ?)", (word_id, segment_id))
 
-                                # Update word occurrences
+                                # Update word occurrences (which is actually the entries count for this word)
                                 cursor.execute("UPDATE words SET occurrences = occurrences + 1 WHERE id = ?", (word_id,))
 
                     except (json.JSONDecodeError, TypeError) as e:
