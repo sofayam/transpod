@@ -1246,7 +1246,15 @@ app.post("/searchword", (req, res) => {
 
         // Convert groupedResults object to an array for Handlebars iteration
         const resultsArray = Object.values(groupedResults).map(podcast => {
-            podcast.episodes = Object.values(podcast.episodes);
+            podcast.episodes = Object.values(podcast.episodes).map(episode => {
+                episode.segments = episode.segments.map(segment => {
+                    // Add the playUrl here
+                    const encodedEpisodeName = encodeURIComponent(episode.episodeName);
+                    segment.playUrl = `/play/${podcast.podcastName}/${encodedEpisodeName}?t=${segment.start}`;
+                    return segment;
+                });
+                return episode;
+            });
             return podcast;
         });
 
