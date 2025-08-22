@@ -4,7 +4,7 @@
 # inotifywait -mrq -e moved_to /volume1/data/languages/japanese/podcasts/content/
 
 # ===== Parameters =====
-WATCH_DIR="volume1/data/languages/japanese/podcasts/content"
+WATCH_DIR="volume2/transpodcontent/content"
 FILE_EXT="info"
 HANDLER_SCRIPT="newinfoadder.sh"
 
