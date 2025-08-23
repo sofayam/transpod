@@ -1028,6 +1028,30 @@ const concordanceDb = new sqlite3.Database(path.join(__dirname, 'content/concord
     }
 });
 
+app.get("/autocomplete", (req, res) => {
+    const query = req.query.q;
+    if (!query) {
+        return res.json([]);
+    }
+
+    const sql = `
+        SELECT word 
+        FROM words 
+        WHERE word LIKE ? 
+        ORDER BY length(word)
+        LIMIT 10
+    `;
+    const searchTerm = query + '%';
+
+    concordanceDb.all(sql, [searchTerm], (err, rows) => {
+        if (err) {
+            console.error('Error querying concordance database:', err.message);
+            return res.status(500).send("Error performing search.");
+        }
+        res.json(rows.map(row => row.word));
+    });
+});
+
 app.get("/searchword", (req, res) => {
     res.render("searchword", { layout: false, query: "", results: null });
 });

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Word</title>
     <style>
         body { font-family: sans-serif; margin: 20px; }
@@ -11,9 +12,57 @@
         details.episode-group { border-left: 3px solid #007bff; padding-left: 10px; margin-top: 10px; }
         summary { cursor: pointer; }
         summary h3, summary h4 { display: inline; margin: 0; }
+        #autocomplete-results {
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            width: 318px;
+            background-color: white;
+            z-index: 1000;
+        }
+        #autocomplete-results ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+        #autocomplete-results li {
+            padding: 8px;
+            cursor: pointer;
+        }
+        #autocomplete-results li:hover {
+            background-color: #f0f0f0;
+        }
         .segment { margin-bottom: 5px; }
         .segment-time { font-weight: bold; color: #555; }
         mark { background-color: yellow; }
+
+        @media (max-width: 600px) {
+            body {
+                margin: 10px;
+            }
+            form {
+                display: flex;
+                flex-direction: column;
+            }
+            input[type="text"] {
+                width: 100%;
+                padding: 15px;
+                font-size: 1.2em;
+                margin-bottom: 10px;
+                box-sizing: border-box;
+            }
+            input[type="submit"] {
+                width: 100%;
+                padding: 15px;
+                font-size: 1.2em;
+            }
+            #autocomplete-results {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
     </style>
 </head>
 <body>
@@ -66,6 +115,45 @@
     {{/if}}
 
     <script>
+    const searchInput = document.getElementById('word');
+    const resultsContainer = document.createElement('div');
+    resultsContainer.id = 'autocomplete-results';
+    searchInput.parentNode.insertBefore(resultsContainer, searchInput.nextSibling);
+
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value;
+        if (query.length < 1) {
+            resultsContainer.innerHTML = '';
+            return;
+        }
+
+        fetch(`/autocomplete?q=${query}`)
+            .then(response => response.json())
+            .then(data => {
+                resultsContainer.innerHTML = '';
+                if (data.length > 0) {
+                    const list = document.createElement('ul');
+                    data.forEach(word => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = word;
+                        listItem.addEventListener('click', () => {
+                            searchInput.value = word;
+                            resultsContainer.innerHTML = '';
+                        });
+                        list.appendChild(listItem);
+                    });
+                    resultsContainer.appendChild(list);
+                }
+            });
+    });
+
+    // Hide autocomplete results when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!resultsContainer.contains(event.target) && event.target !== searchInput) {
+            resultsContainer.innerHTML = '';
+        }
+    });
+
         // Helper function for formatting timestamp (if not already available via Handlebars helper)
         function formatTimestamp(totalSeconds) {
             const minutes = Math.floor(totalSeconds / 60);
