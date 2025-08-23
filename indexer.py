@@ -1,15 +1,15 @@
-
-
 import os
 import json
 import re
 import sqlite3
 import argparse
 from collections import Counter
-from janome.tokenizer import Tokenizer
+from sudachipy import tokenizer
+from sudachipy import dictionary
 
-# Initialize the tokenizer for Japanese
-t = Tokenizer()
+# Initialize tokenizers for Japanese
+tokenizer_c = dictionary.Dictionary().create(mode=tokenizer.Tokenizer.SplitMode.C)
+tokenizer_a = dictionary.Dictionary().create(mode=tokenizer.Tokenizer.SplitMode.A)
 
 # Load configuration
 with open('indexer.config.json', 'r') as f:
@@ -30,7 +30,6 @@ def get_podcast_language(podcast_dir):
             except json.JSONDecodeError:
                 print(f"Warning: Could not decode JSON from {config_path}")
     return 'ja' # Default to 'ja' if the file doesn't exist
-
 
 
 def has_consecutive_repetitions(words, max_repetitions):
@@ -75,7 +74,7 @@ def create_database_schema(cursor):
             start_time REAL,
             end_time REAL,
             text TEXT,
-            FOREIGN KEY(episode_id) REFERENCES episodes(id)
+            FOREIGN KEY(episode_id) REFERENCES segments(id)
         )
     ''')
     cursor.execute('''
@@ -150,13 +149,15 @@ def index_podcasts(content_dir, db_path, log_path, limit_files=None):
                         for segment in segments_data:
                             text = segment.get('text', '')
                             
+                            # Tokenize for repetition check using the longest match
+                            words_for_repetition_check = []
                             if lang == 'ja':
-                                words = [token.surface for token in t.tokenize(text)]
+                                words_for_repetition_check = [m.surface() for m in tokenizer_c.tokenize(text)]
                             else:
-                                words = re.findall(r'\b\w+\b', text)
+                                words_for_repetition_check = re.findall(r'\b\w+\b', text)
 
                             # Check for junk segments
-                            if has_consecutive_repetitions(words, REPMAX):
+                            if has_consecutive_repetitions(words_for_repetition_check, REPMAX):
                                 log_file.write(f"Rejected segment in {file_path}: {text}\n")
                                 continue
 
@@ -167,9 +168,19 @@ def index_podcasts(content_dir, db_path, log_path, limit_files=None):
                             ''', (episode_id, segment.get('start'), segment.get('end'), text))
                             segment_id = cursor.lastrowid
 
+                            # Get tokens for indexing
+                            all_unique_tokens = set()
+                            if lang == 'ja':
+                                tokens_c = [m.surface() for m in tokenizer_c.tokenize(text)]
+                                tokens_a = [m.surface() for m in tokenizer_a.tokenize(text)]
+                                all_unique_tokens = set(tokens_c + tokens_a)
+                            else:
+                                # For non-Japanese, the token set is the same as for the repetition check
+                                all_unique_tokens = set(words_for_repetition_check)
+
                             processed_words_in_segment = set()
 
-                            for word in words: # 'words' is the list of all tokens in the segment
+                            for word in all_unique_tokens: # 'words' is the list of all tokens in the segment
                                 normalized_word = word.lower()
 
                                 # Only process this word for entries if it hasn't been processed yet for this segment
