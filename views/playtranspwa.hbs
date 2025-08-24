@@ -273,9 +273,11 @@
                     // convert to lowercase for consistency
                     cleanWord = cleanWord.toLowerCase();
                     if (cleanWord) {
-         
+                        const phrase = target.closest('.phrase');
+                        const segmentTime = phrase ? parseFloat(phrase.dataset.start) : audio.currentTime;
+
                         const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
-                    
+
                         const langName = displayNames.of(lang);
 
                         let url = ""
@@ -285,6 +287,33 @@
                             // Use Wiktionary for other languages
                             url = `https://en.wiktionary.org/wiki/${cleanWord}#${langName}`;
                         }
+
+                        const lookupData = {
+                            language: lang,
+                            url: url,
+                            word: cleanWord,
+                            podcastName: "{{pod}}",
+                            episodeName: "{{mp3file}}",
+                            timestamp: segmentTime,
+                            lookupTime: new Date().toISOString()
+                        };
+
+                        fetch('/log-lookup', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(lookupData)
+                        }).then(response => response.json()).then(data => {
+                            if (data.success) {
+                                console.log('Lookup logged successfully.');
+                            } else {
+                                console.error('Failed to log lookup:', data.message);
+                            }
+                        }).catch(error => {
+                            console.error('Error logging lookup:', error);
+                        });
+
                         window.open(url, '_blank');
                     }
                 }

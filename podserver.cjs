@@ -708,6 +708,30 @@ app.post('/update-meta-global', (req, res) => {
     }
 });
 
+app.post('/log-lookup', (req, res) => {
+    const { language, url, word, podcastName, episodeName, timestamp, lookupTime } = req.body;
+
+    if (!language || !url || !word || !podcastName || !episodeName || timestamp === undefined || !lookupTime) {
+        return res.status(400).json({ success: false, message: 'Missing required parameters.' });
+    }
+
+    const query = `
+        INSERT INTO lookups (language, url, word, podcast_name, episode_name, episode_timestamp, lookup_timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const decodedEpisodeName = decodeURIComponent(episodeName);
+    const episodeNameWithoutExtension = extractFileNameWithoutExtension(decodedEpisodeName);
+
+    wordsDb.run(query, [language, url, word, podcastName, episodeNameWithoutExtension, timestamp, lookupTime], function (err) {
+        if (err) {
+            console.error('Error inserting into lookups table:', err.message);
+            return res.status(500).json({ success: false, message: 'Database error.' });
+        }
+        res.json({ success: true, message: 'Lookup logged successfully.' });
+    });
+});
+
 
 
 app.use(express.static("public"))
@@ -809,7 +833,7 @@ const db = new sqlite3.Database(path.join(__dirname, 'content', 'TIMEDATA.db'), 
     if (err) {
         console.error('Error opening database:', err.message);
     } else {
-        console.log('Connected to SQLite database.');
+        console.log('Connected to SQLite database: TIMEDATA.db');
         db.run(`
             CREATE TABLE IF NOT EXISTS podcast_time (
                 date TEXT NOT NULL,
@@ -884,13 +908,14 @@ app.get('/initdbfrommeta', (req, res) => {
 })
 
 function extractFileNameWithoutExtension(path) {
-    // Split the path by '/' and get the last part (filename with extension)
+    // Get the filename from the path
     const filenameWithExtension = path.split('/').pop();
     
-    // Split the filename by '.' and get the part before the extension
-    const filenameWithoutExtension = filenameWithExtension.split('.')[0];
-    
-    return filenameWithoutExtension;
+    // Find the last dot to remove the extension
+    const lastDotIndex = filenameWithExtension.lastIndexOf('.');
+
+    // If there's no dot, return the whole string. Otherwise, return the part before the last dot.
+    return lastDotIndex === -1 ? filenameWithExtension : filenameWithExtension.substring(0, lastDotIndex);
   }
 
 app.get('/update-time', (req, res) => {
@@ -1024,7 +1049,32 @@ const concordanceDb = new sqlite3.Database(path.join(__dirname, 'content/concord
     if (err) {
         console.error('Error opening concordance database:', err.message);
     } else {
-        console.log('Connected to concordance database.');
+        console.log('Connected to SQLite database: concordance.db');
+    }
+});
+
+// Initialize words SQLite database
+const wordsDb = new sqlite3.Database(path.join(__dirname, 'content', 'words.db'), (err) => {
+    if (err) {
+        console.error('Error opening words database:', err.message);
+    } else {
+        console.log('Connected to SQLite database: words.db');
+        wordsDb.run(`
+            CREATE TABLE IF NOT EXISTS lookups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                language TEXT,
+                url TEXT,
+                word TEXT,
+                podcast_name TEXT,
+                episode_name TEXT,
+                episode_timestamp REAL,
+                lookup_timestamp TEXT
+            )
+        `, (err) => {
+            if (err) {
+                console.error('Error creating lookups table:', err.message);
+            }
+        });
     }
 });
 
