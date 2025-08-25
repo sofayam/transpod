@@ -715,21 +715,47 @@ app.post('/log-lookup', (req, res) => {
         return res.status(400).json({ success: false, message: 'Missing required parameters.' });
     }
 
-    const query = `
-        INSERT INTO lookups (language, url, word, podcast_name, episode_name, episode_timestamp, lookup_timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
     const decodedEpisodeName = decodeURIComponent(episodeName);
     const episodeNameWithoutExtension = extractFileNameWithoutExtension(decodedEpisodeName);
 
-    wordsDb.run(query, [language, url, word, podcastName, episodeNameWithoutExtension, timestamp, lookupTime], function (err) {
-        if (err) {
-            console.error('Error inserting into lookups table:', err.message);
-            return res.status(500).json({ success: false, message: 'Database error.' });
-        }
-        res.json({ success: true, message: 'Lookup logged successfully.' });
+    wordsDb.serialize(() => {
+        const findWordQuery = `SELECT id FROM words WHERE word = ? AND language = ?`;
+        wordsDb.get(findWordQuery, [word, language], (err, row) => {
+            if (err) {
+                console.error('Error finding word:', err.message);
+                return res.status(500).json({ success: false, message: 'Database error.' });
+            }
+
+            if (row) {
+                // Word exists, insert into lookups
+                insertLookup(row.id);
+            } else {
+                // Word doesn't exist, insert into words then lookups
+                const insertWordQuery = `INSERT INTO words (word, language, url) VALUES (?, ?, ?)`;
+                wordsDb.run(insertWordQuery, [word, language, url], function(err) {
+                    if (err) {
+                        console.error('Error inserting into words table:', err.message);
+                        return res.status(500).json({ success: false, message: 'Database error.' });
+                    }
+                    insertLookup(this.lastID);
+                });
+            }
+        });
     });
+
+    function insertLookup(wordId) {
+        const insertLookupQuery = `
+            INSERT INTO lookups (word_id, podcast_name, episode_name, episode_timestamp, lookup_timestamp)
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        wordsDb.run(insertLookupQuery, [wordId, podcastName, episodeNameWithoutExtension, timestamp, lookupTime], function(err) {
+            if (err) {
+                console.error('Error inserting into lookups table:', err.message);
+                return res.status(500).json({ success: false, message: 'Database error.' });
+            }
+            res.json({ success: true, message: 'Lookup logged successfully.' });
+        });
+    }
 });
 
 
@@ -1054,26 +1080,41 @@ const concordanceDb = new sqlite3.Database(path.join(__dirname, 'content/concord
 });
 
 // Initialize words SQLite database
-const wordsDb = new sqlite3.Database(path.join(__dirname, 'content', 'words.db'), (err) => {
+const wordsDb = new sqlite3.Database(path.join(__dirname, 'content', 'WORDS.db'), (err) => {
     if (err) {
         console.error('Error opening words database:', err.message);
     } else {
         console.log('Connected to SQLite database: words.db');
-        wordsDb.run(`
-            CREATE TABLE IF NOT EXISTS lookups (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                language TEXT,
-                url TEXT,
-                word TEXT,
-                podcast_name TEXT,
-                episode_name TEXT,
-                episode_timestamp REAL,
-                lookup_timestamp TEXT
-            )
-        `, (err) => {
-            if (err) {
-                console.error('Error creating lookups table:', err.message);
-            }
+        wordsDb.serialize(() => {
+            wordsDb.run(`
+                CREATE TABLE IF NOT EXISTS words (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    word TEXT NOT NULL,
+                    language TEXT NOT NULL,
+                    url TEXT,
+                    UNIQUE(word, language)
+                )
+            `, (err) => {
+                if (err) {
+                    console.error('Error creating words table:', err.message);
+                }
+            });
+
+            wordsDb.run(`
+                CREATE TABLE IF NOT EXISTS lookups (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    word_id INTEGER NOT NULL,
+                    podcast_name TEXT,
+                    episode_name TEXT,
+                    episode_timestamp REAL,
+                    lookup_timestamp TEXT,
+                    FOREIGN KEY (word_id) REFERENCES words(id)
+                )
+            `, (err) => {
+                if (err) {
+                    console.error('Error creating lookups table:', err.message);
+                }
+            });
         });
     }
 });

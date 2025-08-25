@@ -283,8 +283,12 @@
                         let url = ""
                         if (lang == "ja") {
                             url = `https://jisho.org/search/${cleanWord}`;
-                        } else {
-                            // Use Wiktionary for other languages
+                        } else if (lang == "sv") {
+                            url = `https://folkets-lexikon.csc.kth.se/folkets/folkets.en.html#lookup&${cleanWord}`
+                        }
+
+                        // Use Wiktionary for other languages
+                        else {
                             url = `https://en.wiktionary.org/wiki/${cleanWord}#${langName}`;
                         }
 
