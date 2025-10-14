@@ -256,7 +256,22 @@ function getNextep(ep) {
     }
 }
 
-app.get("/play/:pod/:ep", (req, res, next) => {
+function getTimeListenedToday() {
+    const today = new Date().toISOString().slice(0, 10); // Get today's date in YYYY-MM-DD format
+    return new Promise((resolve, reject) => {
+        const query = `SELECT SUM(total_seconds) AS total_seconds FROM podcast_time WHERE date = ?`;
+        db.get(query, [today], (err, row) => {
+            if (err) {
+                console.error('Error querying database:', err.message);
+                return resolve(0);
+            }
+            const totalSeconds = row && row.total_seconds ? row.total_seconds : 0;
+            resolve(totalSeconds);
+        });
+    });
+}
+
+app.get("/play/:pod/:ep", async (req, res, next) => {
     let pod = req.params.pod
     let ep = req.params.ep
     let startTime = req.query.t || null;
@@ -282,15 +297,20 @@ app.get("/play/:pod/:ep", (req, res, next) => {
     const config = readConfig(pod);
     info.language = config.lang || 'ja';
 
+    const totalSeconds = await getTimeListenedToday()
+    const timeListenedToday = formatSeconds(totalSeconds)
+
+    console.log("Time listened today: ", timeListenedToday)
+
     res.render("playtranspwa", {
         pod, mp3file: mp3name,
         transcript: transcripttext,
         source: transcriptsrc, meta, nextep,
         info,
         startTime,
-        layout: false
+        timeListenedToday,
+        layout: false,
     })
-
 })
 
 function comparePublishedParsed(a, b) {
