@@ -285,7 +285,9 @@
                         if (lang == "ja") {
                             url = `https://jisho.org/search/${cleanWord}`;
                         } else if (lang == "sv") {
-                            url = `https://folkets-lexikon.csc.kth.se/folkets/folkets.en.html#lookup&${cleanWord}`
+                            url = `https://folkets-lexikon.csc.kth.se/folkets/folkets.en.html#lookup&${cleanWord}&expandDirectly=t&presentQuestions=f`
+                            // maybe more buried params in this url?
+                            // https://folkets-lexikon.csc.kth.se/folkets/folkets.en.html#&expandDirectly=t&presentQuestions=f&newQuestionsImmediately=f&doSpellingCorrection=t&extraKeyboard=f&suggestionProposals=t&lookUpIn=1
                         }
 
                         // Use Wiktionary for other languages
