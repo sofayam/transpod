@@ -300,7 +300,7 @@ app.get("/play/:pod/:ep", async (req, res, next) => {
     const totalSeconds = await getTimeListenedToday()
     const timeListenedToday = formatSeconds(totalSeconds)
 
-    console.log("Time listened today: ", timeListenedToday)
+    // console.log("Time listened today: ", timeListenedToday)
 
     res.render("playtranspwa", {
         pod, mp3file: mp3name,
@@ -649,7 +649,7 @@ function readMetaGlobal() {
 function writeMetaEp(metaPath, finished, timeLastOpened, timeInPod) {
     const metaData = { finished, timeLastOpened, timeInPod }
     fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8')
-    console.log(`Updated meta ep file: ${metaPath}`);
+    // console.log(`Updated meta ep file: ${metaPath}`);
 }
 
 
@@ -663,7 +663,7 @@ function writeMetaPod(folderName, order, show, coreset) {
 
     try {
         fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');
-        console.log(`Updated meta pod file: ${metaPath}`);
+        // console.log(`Updated meta pod file: ${metaPath}`);
     } catch (error) {
         console.error(`Error writing ${metaPath}:`, error);
     }
@@ -682,7 +682,7 @@ function writeMetaGlobal(coresetOnly, language) {
 
     try {
         fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');
-        console.log(`Updated global meta file: ${metaPath}`);
+        // console.log(`Updated global meta file: ${metaPath}`);
     } catch (error) {
         console.error(`Error writing ${metaPath}:`, error);
     }
