@@ -655,7 +655,11 @@ function writeMetaEp(metaPath, finished, timeLastOpened, timeInPod) {
 
 function writeMetaPod(folderName, order, show, coreset) {
     const metaPath = path.join(__dirname, "content", `${folderName}.meta`);
-    const metaData = { order, show, coreset };
+    const metaData = readMetaPod(folderName);
+
+    if (order !== undefined) metaData.order = order;
+    if (show !== undefined) metaData.show = show;
+    if (coreset !== undefined) metaData.coreset = coreset;
 
     try {
         fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8');

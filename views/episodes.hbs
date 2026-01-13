@@ -27,7 +27,7 @@
             fetch('/update-meta-pod', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: podName, order, show, coreset: 'false' })
+                body: JSON.stringify({ name: podName, order, show })
             })
             .then(response => response.json())
             .then(data => {
