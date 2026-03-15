@@ -8,14 +8,17 @@ const sqlite3 = require('sqlite3').verbose();
 
 var app = express()
 
-var PORT = 8014
+const appConfig = require('./transpod.config.json');
+
+var PORT = appConfig.PORT;
 var orderList = null
 var feedOrderDict = null
 
-const mini = "192.168.68.101"
+const mini = appConfig.MINI_IP;
+const DICT_PORT = appConfig.DICT_PORT;
 
-const LOG_SERVER_URL = 'http://' + mini + ':8015/log';
-const GETNEW_SERVER_URL = 'http://' + mini + ':8015/getnew';
+const LOG_SERVER_URL = 'http://' + mini + ':' + appConfig.LOG_SERVER_PORT + '/log';
+const GETNEW_SERVER_URL = 'http://' + mini + ':' + appConfig.LOG_SERVER_PORT + '/getnew';
 
 if (process.argv.length > 2) {
     PORT = parseInt(process.argv[2])
@@ -309,6 +312,7 @@ app.get("/play/:pod/:ep", async (req, res, next) => {
         info,
         startTime,
         timeListenedToday,
+        dictPort: DICT_PORT,
         layout: false,
     })
 })

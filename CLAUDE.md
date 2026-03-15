@@ -30,15 +30,21 @@ python create_concordance.py <podcast_name> <num_occurrences> <lang>
 
 `nightly.sh` runs `getpodcasts.py` for all configured podcasts via cron.
 
-## Docker
+## Deployment Architecture
+
+Three machines are involved:
+
+- **`mini`** (192.168.68.101) — Apple Silicon Mac. Primary dev machine. Permanently runs `getnewserver.cjs` (podcast downloading + transcription orchestration) and `transcribefast.py` (MLX Whisper) — both require the GPU and will never move to box.
+- **`box`** — Proxmox VM. Production deployment target for `podserver.cjs`, the Japanese lookup/dictionary server, and the wiki. Deployed via Docker. Calls back to `mini:8015` to trigger downloads/transcription.
+
+Deployment-specific values (ports, `MINI_IP`) live in `transpod.config.json`, which is read by both Node (`require()`) and Python (`json.load()`). Because `mini` has a stable IP, `transpod.config.json` can ship with the code unchanged — `podserver.cjs` deployed to `box` already knows where to find `mini` with no reconfiguration.
 
 ```bash
 ./dockerbuild.sh
-./dockerrunbox.sh     # Deploy to box server (192.168.68.101)
-./dockerrunrpm.sh     # Deploy to rpm17 server
+./dockerrunbox.sh     # Deploy to box
 ```
 
-Content is synced to remote servers via rsync scripts (`rsyncbox.sh`, etc.).
+The rsync scripts (`rsyncontentbox.sh`, etc.) are the transfer layer between the two machines — they push the downloaded MP3s and JSON transcripts produced on `mini` over to `box` where `podserver.cjs` can serve them. Hardcoded `box.local` targets in these scripts are intentional ops tooling, not application config.
 
 ## Architecture
 

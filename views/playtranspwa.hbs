@@ -283,7 +283,7 @@
 
                         let url = ""
                         if (lang == "ja") {
-                            url = `http://${window.location.hostname}:8000/search/${encodeURIComponent(cleanWord)}?podcast=${encodeURIComponent("{{pod}}")}&episode=${encodeURIComponent("{{{mp3file}}}")}&timestamp=${segmentTime}`;
+                            url = `http://${window.location.hostname}:{{dictPort}}/search/${encodeURIComponent(cleanWord)}?podcast=${encodeURIComponent("{{pod}}")}&episode=${encodeURIComponent("{{{mp3file}}}")}&timestamp=${segmentTime}`;
                         } else if (lang == "sv") {
                             url = `https://folkets-lexikon.csc.kth.se/folkets/folkets.en.html#lookup&${cleanWord}&expandDirectly=t&presentQuestions=f`
                             // maybe more buried params in this url?

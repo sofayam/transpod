@@ -7,11 +7,13 @@ const fs = require('fs');
 const fsPromises = fs.promises;
 
 
+const appConfig = require('./transpod.config.json');
+
 const HOURDELAY = 12
 const LOGLINES = 40; // Number of lines to read from the log file
 
 // Configuration
-const PORT = 8015;
+const PORT = appConfig.LOG_SERVER_PORT;
 const SCRIPT_PATH = path.join(__dirname, 'getnewpodcasts.sh');
 
 const DEFAULT_DELAY = HOURDELAY * 60 * 60 * 1000; // Default delay duration in milliseconds (6 hours)

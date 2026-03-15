@@ -9,6 +9,9 @@ import config
 import os.path
 import argparse
 
+with open(os.path.join(os.path.dirname(__file__), 'transpod.config.json')) as f:
+    appConfig = json.load(f)
+
 
 def transcribe(infile: str, lang: str):
 
@@ -25,7 +28,7 @@ def transcribe(infile: str, lang: str):
 
     optionsmlx = {
             "language": "ja",
-            "path_or_hf_repo": "mlx-community/whisper-large-v3-mlx",
+            "path_or_hf_repo": appConfig["WHISPER_MODEL"],
             "initial_prompt": "。、？！",
     } 
 
