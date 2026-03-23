@@ -11,7 +11,7 @@ COPY podserver.cjs .
 COPY views views
 COPY manifest.json .
 COPY public public 
-
+COPY transpod.config.json .
 EXPOSE 8014
 
 CMD ["node", "podserver.cjs"]
