@@ -57,17 +57,36 @@ def transcribe(infile: str, lang: str):
                     exit()
 
     # otherwise transcribe
-
-    print (f" Whisper transcribing {infile} to {outfile}")
-
-    result = mlx_whisper.transcribe(infile, **optionsmlx) # type: ignore
-
-    segs = result["segments"] # type: ignore
-    text = result["text"] # type: ignore
     stripped = []
+    text = ""
 
-    for seg in segs: # type: ignore
-        stripped.append({"start": seg["start"], "end": seg["end"], "text": seg["text"]}) # type: ignore
+    if lang == "ja":    
+        locale = "ja_JP"
+        print (f" YAP transcribing {infile} to {outfile}")
+
+        import subprocess
+        result = subprocess.run(["yap", infile, "--json", f"--locale={locale}"], capture_output=True, 
+                                text=True)
+        
+        result = json.loads(result.stdout)
+
+        segs = result["segments"] # type: ignore
+
+        for seg in segs: # type: ignore
+            stripped.append({"start": seg["start"], "end": seg["end"], "text": seg["text"]}) # type: ignore
+            text += seg["text"] # type: ignore  
+
+    else:
+    
+        print (f" Whisper transcribing {infile} to {outfile}")
+
+        result = mlx_whisper.transcribe(infile, **optionsmlx) # type: ignore
+
+        segs = result["segments"] # type: ignore
+        text = result["text"] # type: ignore
+
+        for seg in segs: # type: ignore
+            stripped.append({"start": seg["start"], "end": seg["end"], "text": seg["text"]}) # type: ignore
 
 
 
