@@ -2,6 +2,8 @@
 */*.json
 */*.info
 */*.json.txt
+*/*.json.YAP
+*/*.json.WHS
 */transcripts
 *.meta
 TIMEDATA.db

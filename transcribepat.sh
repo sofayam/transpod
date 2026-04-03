@@ -18,6 +18,8 @@ if (( ${#files} == 0 )); then
   exit 1
 fi
 
+conda activate transpod
+
 # Process the matched files
 for file in "${files[@]}"; do
   time python3 transcribefast.py $file
