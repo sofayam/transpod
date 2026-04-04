@@ -60,7 +60,13 @@ def transcribe(infile: str, lang: str, locale: str):
 
     # make choice of transcriber based on locale. If locale is in YAP_LOCALES, use YAP, otherwise use Whisper. 
     
-    transcriber = "YAP" if isYapLocale(locale) else "WHS"
+    ## Temporarily hardcode to use Whisper for all locales, since YAP is currently unreliable and 
+    # we want to get transcripts out. Will re-enable YAP in the future after it improves.
+    
+    # transcriber = "YAP" if isYapLocale(locale) else "WHS"
+
+    transcriber = "WHS" 
+
     flagfile = outfile + "." + transcriber
 
     if transcriber == "YAP":
@@ -68,10 +74,31 @@ def transcribe(infile: str, lang: str, locale: str):
         print (f" YAP transcribing {infile} to {outfile}")
     
         import subprocess
-        result = subprocess.run(["yap", infile, "--json", f"--locale={locale}"], capture_output=True, 
-                                text=True)
-        
-        result = json.loads(result.stdout)
+        result_proc = subprocess.run(["yap", infile, "--json", f"--locale={locale}"], capture_output=True, text=True)
+        stdout = result_proc.stdout
+        try:
+            result = json.loads(stdout)
+        except Exception:
+            import sys
+            # attempt to extract a JSON object from any surrounding output
+            s = stdout or ""
+            start = s.find('{')
+            end = s.rfind('}')
+            if start != -1 and end != -1 and end > start:
+                try:
+                    result = json.loads(s[start:end+1])
+                except Exception:
+                    print("Failed to parse JSON from yap stdout; debug info:", file=sys.stderr)
+                    print("returncode:", result_proc.returncode, file=sys.stderr)
+                    print("stderr:", result_proc.stderr, file=sys.stderr)
+                    print("stdout repr (first 2000 chars):", repr(s[:2000]), file=sys.stderr)
+                    raise
+            else:
+                print("No JSON object found in yap stdout; debug info:", file=sys.stderr)
+                print("returncode:", result_proc.returncode, file=sys.stderr)
+                print("stderr:", result_proc.stderr, file=sys.stderr)
+                print("stdout repr (first 2000 chars):", repr(s[:2000]), file=sys.stderr)
+                raise
 
         segs = result["segments"] # type: ignore
 
@@ -94,11 +121,17 @@ def transcribe(infile: str, lang: str, locale: str):
             exit()
         
         import mlx_whisper
+
         optionsmlx = {
-            "language": lang,
+            "language": "ja",
             "path_or_hf_repo": appConfig["WHISPER_MODEL"],
-            "initial_prompt": ".,?!",
+            "initial_prompt": "。、？！",
         } 
+
+        if lang != "ja":
+            optionsmlx["language"] = lang
+            optionsmlx["initial_prompt"] = ".,?!"
+        
         print (f" Whisper transcribing {infile} to {outfile}")
 
         result = mlx_whisper.transcribe(infile, **optionsmlx) # type: ignore
