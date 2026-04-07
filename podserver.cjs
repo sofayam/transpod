@@ -972,7 +972,7 @@ function extractFileNameWithoutExtension(path) {
     return lastDotIndex === -1 ? filenameWithExtension : filenameWithExtension.substring(0, lastDotIndex);
   }
 
-app.get('/update-time', (req, res) => {
+app.get('/update-time', async (req, res) => {
     const { date, podcastName, episodeName, seconds, language } = req.query;
 
     if (!date || !podcastName || !episodeName || !seconds) {
@@ -995,13 +995,17 @@ app.get('/update-time', (req, res) => {
         lang = config.lang || 'ja';
     }
 
-    db.run(query, [date, podcastName, episodeNameWithoutExtension, parseInt(seconds), lang], function (err) {
+    db.run(query, [date, podcastName, episodeNameWithoutExtension, parseInt(seconds), lang], async function (err) {
         if (err) {
             console.error('Error updating database:', err.message);
             return res.status(500).json({ success: false, message: 'Database error.' });
         }
 
-        res.json({ success: true, message: 'Time updated successfully.' });
+        // Get updated time listened today
+        const totalSeconds = await getTimeListenedToday();
+        const timeListenedToday = formatSeconds(totalSeconds);
+
+        res.json({ success: true, message: 'Time updated successfully.', timeListenedToday });
     });
 });
 

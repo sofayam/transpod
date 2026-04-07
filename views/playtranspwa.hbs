@@ -52,9 +52,10 @@
     <!-- Bottom status display -->
     <div class="status-bar">
           
+                    <!-- Display the podcast title and time listened today,
+                    this should be updated every time we send a time listened update to the server -->
 
-
-                    <span id=podtitle1></span> [{{timeListenedToday}}] 
+                    <span id=podtitle1></span> [<span id="timeListenedToday">{{timeListenedToday}}</span>] 
         <div class="status-item">
             
             {{#if info.published}}
@@ -532,6 +533,11 @@ audio.addEventListener("progress", () => {
                     console.error(`Error updating time: ${data.message}`);
                 } else {
                     console.log(`Time updated successfully for ${podcastName} - ${episodeName}`);
+                    // Update the displayed time
+                    const timeSpan = document.getElementById('timeListenedToday');
+                    if (timeSpan && data.timeListenedToday) {
+                        timeSpan.textContent = data.timeListenedToday;
+                    }
                 }
             })
             .catch(error => console.error("Fetch error:", error));
