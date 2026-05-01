@@ -106,7 +106,6 @@
             let timeLastOpened = new Date()
             let finished = {{ meta.finished }}
         
-    let pptoggle = true
     let lastTime = 0
     const listenSecondsUpdateInterval = 10; // seconds
 
@@ -262,7 +261,7 @@
         audio.addEventListener("timeupdate", function () {
             updateTimeDisplay();
             highlightCurrentPhrase();
-
+            updatePositionState();
         })
 
         transcriptionContainer.addEventListener("click", (event) => {
@@ -355,6 +354,7 @@
             audio.currentTime = {{ startTime }};
             seekSlider.max = audio.duration;
             seekSlider.disabled = false;
+            initMediaSession();
         }
 
         seekSlider.addEventListener("input", function () {
@@ -364,20 +364,18 @@
 
         audio.addEventListener("pause", () => {
             playpauseBtn.innerHTML = "▶"
-            pptoggle = true
-
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         })
 
 
         audio.addEventListener("ended", () => {
             playpauseBtn.innerHTML = "▶"
-            pptoggle = true
-
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
         })
         
         audio.addEventListener("play", () => {
             playpauseBtn.innerHTML = "⏸"
-            pptoggle = false
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
         })
 
 
@@ -391,13 +389,28 @@ audio.addEventListener("progress", () => {
     if (audio.buffered.length > 0) {
         const end = audio.buffered.end(0);
         if (end >= audio.duration) {
-    
                 playpauseBtn.style.backgroundColor = "green";
-            // alert("MP3 has fully downloaded.");
         }
     }
 });
 
+        audio.addEventListener("waiting", () => {
+            playpauseBtn.style.backgroundColor = "orange";
+        });
+        audio.addEventListener("stalled", () => {
+            playpauseBtn.style.backgroundColor = "orange";
+        });
+        audio.addEventListener("playing", () => {
+            if (audio.buffered.length > 0 && audio.buffered.end(0) >= audio.duration) {
+                playpauseBtn.style.backgroundColor = "green";
+            } else {
+                playpauseBtn.style.backgroundColor = "";
+            }
+        });
+        audio.addEventListener("error", () => {
+            playpauseBtn.style.backgroundColor = "red";
+            logMessage("Audio error — try reloading");
+        });
 
         audio.addEventListener("canplaythrough", setStartTime)
 
@@ -414,16 +427,44 @@ audio.addEventListener("progress", () => {
             timeDisplay.textContent = `${current} / ${total}`;
         }
 
+        function updatePositionState() {
+            if (!('mediaSession' in navigator) || !('setPositionState' in navigator.mediaSession)) return;
+            if (isNaN(audio.duration) || audio.duration === 0) return;
+            navigator.mediaSession.setPositionState({
+                duration: audio.duration,
+                playbackRate: audio.playbackRate,
+                position: Math.min(audio.currentTime, audio.duration),
+            });
+        }
+
+        function initMediaSession() {
+            if (!('mediaSession' in navigator)) return;
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: decodedTitle,
+                artist: "{{pod}}",
+                artwork: [{ src: '/geticon?pod={{pod}}', sizes: '64x64', type: 'image/jpeg' }]
+            });
+            navigator.mediaSession.setActionHandler('play', () => audio.play());
+            navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+            navigator.mediaSession.setActionHandler('seekbackward', (d) => {
+                audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10));
+            });
+            navigator.mediaSession.setActionHandler('seekforward', (d) => {
+                audio.currentTime = Math.min(audio.duration, audio.currentTime + (d.seekOffset || 10));
+            });
+            navigator.mediaSession.setActionHandler('seekto', (d) => {
+                if (d.fastSeek && 'fastSeek' in audio) audio.fastSeek(d.seekTime);
+                else audio.currentTime = d.seekTime;
+            });
+        }
+
         playpauseBtn.addEventListener("click", () => {
-            if (pptoggle) {
+            if (audio.paused) {
                 audio.play();
-                playpauseBtn.innerHTML = "⏸"
             } else {
                 saveMeta();
-                playpauseBtn.innerHTML = "▶"
-                audio.pause()
+                audio.pause();
             }
-            pptoggle = !pptoggle;
         });
 
         finishBtn.addEventListener("click", () => {
