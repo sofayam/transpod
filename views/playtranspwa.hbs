@@ -339,6 +339,7 @@
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "visible") {
                 onDisplayChange();
+                initMediaSession();
             }
         });
 
@@ -444,7 +445,9 @@ audio.addEventListener("progress", () => {
                 artist: "{{pod}}",
                 artwork: [{ src: '/geticon?pod={{pod}}', sizes: '64x64', type: 'image/jpeg' }]
             });
-            navigator.mediaSession.setActionHandler('play', () => audio.play());
+            navigator.mediaSession.setActionHandler('play', () => {
+                audio.play().catch(e => console.warn('MediaSession play rejected:', e));
+            });
             navigator.mediaSession.setActionHandler('pause', () => audio.pause());
             navigator.mediaSession.setActionHandler('seekbackward', (d) => {
                 audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10));
@@ -457,6 +460,10 @@ audio.addEventListener("progress", () => {
                 else audio.currentTime = d.seekTime;
             });
         }
+
+        // Register immediately — on iOS, canplaythrough won't fire until after first
+        // user interaction, so waiting for it means the lock screen has no handlers.
+        initMediaSession();
 
         playpauseBtn.addEventListener("click", () => {
             if (audio.paused) {
