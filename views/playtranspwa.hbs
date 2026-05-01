@@ -438,6 +438,20 @@ audio.addEventListener("progress", () => {
             });
         }
 
+        // iOS suspends the audio output session when the app is backgrounded.
+        // Routing audio through an AudioContext lets us call resume() to reconnect
+        // the hardware output — without this, currentTime advances but no sound plays.
+        let audioCtx = null;
+        function ensureAudioContext() {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return Promise.resolve();
+            if (!audioCtx) {
+                audioCtx = new AC();
+                audioCtx.createMediaElementSource(audio).connect(audioCtx.destination);
+            }
+            return audioCtx.state === 'suspended' ? audioCtx.resume() : Promise.resolve();
+        }
+
         function initMediaSession() {
             if (!('mediaSession' in navigator)) return;
             navigator.mediaSession.metadata = new MediaMetadata({
@@ -446,17 +460,19 @@ audio.addEventListener("progress", () => {
                 artwork: [{ src: '/geticon?pod={{pod}}', sizes: '64x64', type: 'image/jpeg' }]
             });
             navigator.mediaSession.setActionHandler('play', () => {
-                if (audio.readyState === 0) {
-                    // iOS unloaded the audio data while backgrounded — reload then seek back
-                    const savedTime = audio.currentTime;
-                    audio.load();
-                    audio.addEventListener('loadedmetadata', () => {
-                        audio.currentTime = savedTime;
-                        audio.play().catch(e => console.warn('MediaSession play after reload rejected:', e));
-                    }, { once: true });
-                } else {
-                    audio.play().catch(e => console.warn('MediaSession play rejected:', e));
-                }
+                ensureAudioContext().then(() => {
+                    if (audio.readyState === 0) {
+                        // iOS unloaded the audio data while backgrounded — reload then seek back
+                        const savedTime = audio.currentTime;
+                        audio.load();
+                        audio.addEventListener('loadedmetadata', () => {
+                            audio.currentTime = savedTime;
+                            audio.play().catch(e => console.warn('MediaSession play after reload rejected:', e));
+                        }, { once: true });
+                    } else {
+                        audio.play().catch(e => console.warn('MediaSession play rejected:', e));
+                    }
+                });
             });
             navigator.mediaSession.setActionHandler('pause', () => audio.pause());
             navigator.mediaSession.setActionHandler('seekbackward', (d) => {
@@ -484,7 +500,7 @@ audio.addEventListener("progress", () => {
 
         playpauseBtn.addEventListener("click", () => {
             if (audio.paused) {
-                audio.play();
+                ensureAudioContext().then(() => audio.play());
             } else {
                 saveMeta();
                 audio.pause();
