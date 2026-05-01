@@ -446,7 +446,17 @@ audio.addEventListener("progress", () => {
                 artwork: [{ src: '/geticon?pod={{pod}}', sizes: '64x64', type: 'image/jpeg' }]
             });
             navigator.mediaSession.setActionHandler('play', () => {
-                audio.play().catch(e => console.warn('MediaSession play rejected:', e));
+                if (audio.readyState === 0) {
+                    // iOS unloaded the audio data while backgrounded — reload then seek back
+                    const savedTime = audio.currentTime;
+                    audio.load();
+                    audio.addEventListener('loadedmetadata', () => {
+                        audio.currentTime = savedTime;
+                        audio.play().catch(e => console.warn('MediaSession play after reload rejected:', e));
+                    }, { once: true });
+                } else {
+                    audio.play().catch(e => console.warn('MediaSession play rejected:', e));
+                }
             });
             navigator.mediaSession.setActionHandler('pause', () => audio.pause());
             navigator.mediaSession.setActionHandler('seekbackward', (d) => {
@@ -458,6 +468,13 @@ audio.addEventListener("progress", () => {
             navigator.mediaSession.setActionHandler('seekto', (d) => {
                 if (d.fastSeek && 'fastSeek' in audio) audio.fastSeek(d.seekTime);
                 else audio.currentTime = d.seekTime;
+            });
+            // iOS needs prev/next registered to treat the session as fully controllable
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                audio.currentTime = Math.max(0, audio.currentTime - 10);
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
             });
         }
 
