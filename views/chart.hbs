@@ -36,7 +36,7 @@
             <form action="/chartFromDB" method="get" id="filterForm">
                 <label for="language">Language:</label>
                 <select name="language" id="language" onchange="this.form.submit()">
-                    <option value="all">All</option>
+                    <option value="all" {{#if (eq selectedLanguage "all")}}selected{{/if}}>All</option>
                     {{#each languages}}
                     <option value="{{this.language}}" {{#if (eq this.language ../selectedLanguage)}}selected{{/if}}>{{this.language}}</option>
                     {{/each}}
