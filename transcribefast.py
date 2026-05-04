@@ -63,14 +63,17 @@ def transcribe(infile: str, lang: str, locale: str):
     ## Temporarily hardcode to use Whisper for all locales, since YAP is currently unreliable and 
     # we want to get transcripts out. Will re-enable YAP in the future after it improves.
     
-    # transcriber = "YAP" if isYapLocale(locale) else "WHS"
+    transcriber = "YAP" if isYapLocale(locale) else "WHS"
 
-    transcriber = "WHS" 
+    # transcriber = "WHS" 
+    transgood = False
+
 
     flagfile = outfile + "." + transcriber
 
     if transcriber == "YAP":
-
+        failed = False
+        
         print (f" YAP transcribing {infile} to {outfile}")
     
         import subprocess
@@ -92,21 +95,26 @@ def transcribe(infile: str, lang: str, locale: str):
                     print("returncode:", result_proc.returncode, file=sys.stderr)
                     print("stderr:", result_proc.stderr, file=sys.stderr)
                     print("stdout repr (first 2000 chars):", repr(s[:2000]), file=sys.stderr)
-                    raise
+                    failed = True
             else:
                 print("No JSON object found in yap stdout; debug info:", file=sys.stderr)
                 print("returncode:", result_proc.returncode, file=sys.stderr)
                 print("stderr:", result_proc.stderr, file=sys.stderr)
                 print("stdout repr (first 2000 chars):", repr(s[:2000]), file=sys.stderr)
-                raise
+                failed = True
 
-        segs = result["segments"] # type: ignore
+        if not failed:
+            segs = result["segments"] # type: ignore
 
-        for seg in segs: # type: ignore
-            stripped.append({"start": seg["start"], "end": seg["end"], "text": seg["text"]}) # type: ignore
-            text += seg["text"] # type: ignore  
+            for seg in segs: # type: ignore
+                stripped.append({"start": seg["start"], "end": seg["end"], "text": seg["text"]}) # type: ignore
+                text += seg["text"] # type: ignore  
 
-    else:
+            transgood = True
+
+    if not transgood:
+        transcriber = "WHS"
+
         # give preexisting WHS transcripts a flag file if they dont have one, and then exit. 
         
 
