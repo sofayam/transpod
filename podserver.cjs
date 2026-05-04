@@ -1010,7 +1010,7 @@ app.get('/update-time', async (req, res) => {
 });
 
 app.get("/chartFromDB", (req, res) => {
-    const selectedLanguage = req.query.language;
+    const selectedLanguage = req.query.language ?? 'ja';
 
     let query = `
         SELECT date, language, SUM(total_seconds) AS totalSeconds
