@@ -354,7 +354,16 @@ app.get("/recentPublish", (req, res) => {
 
                     let barename = ep.slice(0, -5)
 
-                    let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), info, finished: !(isUnfinished(podName, barename)) }
+                    let transcriptionMethod = "WHS"
+                    // take the infopath, subtract the .info, add .json.YAP  and check if it exists
+
+                    let transcriptpath = path.join(ppath, barename + ".json.YAP")
+
+                    if (fs.existsSync(transcriptpath)) {
+                        transcriptionMethod = "YAP"
+                    }
+
+                    let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), info, finished: !(isUnfinished(podName, barename)), transcriptionMethod }
                     epList.push(epentry)
                 }
             })

@@ -18,7 +18,9 @@
         <ul>
         {{#each epList}}
             <li>
-                {{this.info.published}} <a href="/play/{{this.pod}}/{{this.encoded}}">  {{this.pod}}: {{this.name}} {{#if finished}}
+                {{this.info.published}} <a href="/play/{{this.pod}}/{{this.encoded}}">  {{this.pod}}: {{this.name}} 
+                [{{ this.transcriptionMethod}}] 
+                {{#if finished}}
                     ✅
                 {{else}}
                     🔴
