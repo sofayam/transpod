@@ -109,10 +109,11 @@
     let lastTime = 0
     const listenSecondsUpdateInterval = 10; // seconds
 
-    const decodedTitle = decodeURIComponent("{{{mp3file}}}")
+    const decodedTitle = decodeURIComponent("{{{mp3file}}}") + " - " + "[{{transcriptionMethod}}]" 
         document.getElementById("podtitle1").textContent = decodedTitle
         document.getElementById("podtitle2").textContent = decodedTitle
-        document.title = decodedTitle
+        document.title = decodedTitle 
+
 
         const audio = document.getElementById("audio");
         audio.controls = false

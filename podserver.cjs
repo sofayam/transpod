@@ -314,6 +314,7 @@ app.get("/play/:pod/:ep", async (req, res, next) => {
         timeListenedToday,
         dictPort: DICT_PORT,
         layout: false,
+        transcriptionMethod: getTranscriptionMethod(pod, ep)
     })
 })
 
@@ -328,6 +329,16 @@ function comparePublishedParsed(a, b) {
     }
     return 0;
 }
+
+function getTranscriptionMethod(pod, ep) {
+    let transcriptionMethod = "WHS"
+    let transcriptpath = path.join(__dirname, "content", pod, ep + ".json.YAP")
+    if (fs.existsSync(transcriptpath)) {
+        transcriptionMethod = "YAP"
+    }
+    return transcriptionMethod
+}
+
 
 app.get("/recentPublish", (req, res) => {
 
@@ -354,14 +365,7 @@ app.get("/recentPublish", (req, res) => {
 
                     let barename = ep.slice(0, -5)
 
-                    let transcriptionMethod = "WHS"
-                    // take the infopath, subtract the .info, add .json.YAP  and check if it exists
-
-                    let transcriptpath = path.join(ppath, barename + ".json.YAP")
-
-                    if (fs.existsSync(transcriptpath)) {
-                        transcriptionMethod = "YAP"
-                    }
+                    let transcriptionMethod = getTranscriptionMethod(podName, barename)
 
                     let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), info, finished: !(isUnfinished(podName, barename)), transcriptionMethod }
                     epList.push(epentry)
