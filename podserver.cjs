@@ -331,10 +331,12 @@ function comparePublishedParsed(a, b) {
 }
 
 function getTranscriptionMethod(pod, ep) {
-    let transcriptionMethod = "WHS"
-    let transcriptpath = path.join(__dirname, "content", pod, ep + ".json.YAP")
-    if (fs.existsSync(transcriptpath)) {
+    let transcriptionMethod = "???"
+    let transcriptpath = path.join(__dirname, "content", pod, ep)
+    if (fs.existsSync(transcriptpath + ".json.YAP")) {
         transcriptionMethod = "YAP"
+    } else if (fs.existsSync(transcriptpath + ".json.WHS")) {
+        transcriptionMethod = "WHS"
     }
     return transcriptionMethod
 }

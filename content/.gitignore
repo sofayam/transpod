@@ -4,7 +4,7 @@
 */*.json.txt
 */*.json.YAP
 */*.json.WHS
-*.*.json.summary
+*/*.json.summary
 */transcripts
 *.meta
 TIMEDATA.db
