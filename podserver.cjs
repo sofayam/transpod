@@ -318,6 +318,19 @@ app.get("/play/:pod/:ep", async (req, res, next) => {
     })
 })
 
+app.get("/get-summary/:pod/:ep", (req, res) => {
+    const pod = req.params.pod;
+    const ep = req.params.ep;
+    const summaryPath = path.join(__dirname, "content", pod, ep + ".json.summary");
+
+    if (fs.existsSync(summaryPath)) {
+        const summary = fs.readFileSync(summaryPath, 'utf-8');
+        res.json({ success: true, summary });
+    } else {
+        res.json({ success: false, message: "No summary available for this episode." });
+    }
+});
+
 function comparePublishedParsed(a, b) {
     if (!a || !b) {
         return 0
