@@ -21,6 +21,6 @@ fi
 
 # Process the matched files
 for file in "${files[@]}"; do
-	./summarise.sh $file
+	python summarise.py $file --save
 done
 
