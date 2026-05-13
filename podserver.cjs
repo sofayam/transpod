@@ -321,13 +321,40 @@ app.get("/play/:pod/:ep", async (req, res, next) => {
 app.get("/get-summary/:pod/:ep", (req, res) => {
     const pod = req.params.pod;
     const ep = req.params.ep;
-    const summaryPath = path.join(__dirname, "content", pod, ep + ".json.summary");
+    const type = req.query.type;
+    
+    let summaryPath = path.join(__dirname, "content", pod, ep + ".json.summary");
+    if (type && type !== 'default') {
+        summaryPath += "." + type;
+    }
 
     if (fs.existsSync(summaryPath)) {
         const summary = fs.readFileSync(summaryPath, 'utf-8');
         res.json({ success: true, summary });
     } else {
-        res.json({ success: false, message: "No summary available for this episode." });
+        res.json({ success: false, message: `No ${type || ''} summary available for this episode.` });
+    }
+});
+
+app.get("/list-summaries/:pod/:ep", (req, res) => {
+    const pod = req.params.pod;
+    const ep = req.params.ep;
+    const podPath = path.join(__dirname, "content", pod);
+    const basePattern = ep + ".json.summary";
+
+    try {
+        const files = fs.readdirSync(podPath);
+        const summaries = files
+            .filter(file => file.startsWith(basePattern))
+            .map(file => {
+                if (file === basePattern) return "default";
+                return file.replace(basePattern + ".", "");
+            });
+        
+        res.json({ success: true, summaries });
+    } catch (error) {
+        console.error("Error listing summaries:", error);
+        res.status(500).json({ success: false, message: "Error listing summaries" });
     }
 });
 

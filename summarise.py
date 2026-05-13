@@ -25,12 +25,15 @@ PROMPT_TEMPLATE_JAPANESE = "Please summarise this transcript of a Japanese Podca
 PROMPT_TEMPLATE_ENGLISH = "Please summarise this transcript of a Japanese Podcast, in English." + PROMPT_SUMMARY_CONTENTS
 
 PROMPT_TEMPLATE_VOCABULARY = """Please give a list of any advanced Japanese vocabulary that was used in the podcast, 
-along with the kana and a simple explanation of each term in Japanese. 
-Exclude loan words and common words, and focus on more advanced vocabulary that might be useful for 
+along with the kana. Give a simple explanation of each term in Japanese and then in English 
+Exclude loan words, katakana japanese and common words, and focus on more advanced native Japanesevocabulary that is relevant for 
 someone studying Japanese at an intermediate level."""
 
-PROMPT_TEMPLATE_IDIOMS = """Please give a list of any interesting cultural references or idiomatic expressions 
-that were mentioned in the podcast, along with explanations in Japanese."""
+PROMPT_TEMPLATE_IDIOMS = """Please give a list of any idiomatic expressions 
+that were mentioned in this podcast transcript, along with explanations first in Japanese and then in English."""
+
+PROMPT_TEMPLATE_CULTURE = """Please give a list of any cultural references 
+that were mentioned in this podcast transcript, along with explanations first in Japanese and then in English."""
 
 PROMPT_EPILOGUE = """All output must be in vanilla markdown. 
 
@@ -41,7 +44,8 @@ prompts = {
     "japanese": PROMPT_TEMPLATE_JAPANESE,
     "english": PROMPT_TEMPLATE_ENGLISH,
     "vocabulary": PROMPT_TEMPLATE_VOCABULARY,
-    "idioms": PROMPT_TEMPLATE_IDIOMS
+    "idioms": PROMPT_TEMPLATE_IDIOMS,
+    "culture": PROMPT_TEMPLATE_CULTURE,
 }
 
 def summarise(transcript: str, model: str, ctx_size: int, host: str, section: str) -> str:
@@ -84,7 +88,7 @@ def main():
     parser.add_argument("--ctx", type=int, default=32768, help="Context window size (default: 32768)")
     parser.add_argument("--save", action="store_true", help="Save the summary to a .summary file")
     parser.add_argument("--host", default="localhost", help="Host for the Ollama API (default: localhost)")
-    parser.add_argument("--section", choices=["japanese", "english", "vocabulary", "idioms"], help="Only output a specific section of the summary")
+    parser.add_argument("--section", choices=["japanese", "english", "vocabulary", "idioms", "culture"], help="Only output a specific section of the summary")
     parser.add_argument("--dryrun", action="store_true", help="just print some diagnostics")
     parser.add_argument("--force", action="store_true", help="force action even if file already exists")
     args = parser.parse_args()

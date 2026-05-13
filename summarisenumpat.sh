@@ -47,7 +47,7 @@ for ((i = $2;; i++)); do
   file="${files[1]}"
   echo "Processing file: $file"
   # iterate over the section types and call summarise.py for each section type
-  for section in japanese english vocabulary idioms; do   
+  for section in japanese english vocabulary idioms culture; do   
     echo "Processing file $file section: $section"
     python summarise.py $file --save --section $section --host $host
   done
