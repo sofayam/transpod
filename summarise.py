@@ -26,7 +26,7 @@ PROMPT_TEMPLATE_ENGLISH = "Please summarise this transcript of a Japanese Podcas
 
 PROMPT_TEMPLATE_VOCABULARY = """Please give a list of any advanced Japanese vocabulary that was used in the podcast, 
 along with the kana. Give a simple explanation of each term in Japanese and then in English 
-Exclude loan words, katakana japanese and common words, and focus on more advanced native Japanesevocabulary that is relevant for 
+Do not include loan words, katakana japanese and common words, and focus onnative Japanese vocabulary that is relevant for 
 someone studying Japanese at an intermediate level."""
 
 PROMPT_TEMPLATE_IDIOMS = """Please give a list of any idiomatic expressions 
@@ -61,7 +61,9 @@ def summarise(transcript: str, model: str, ctx_size: int, host: str, section: st
         "think": False,
         "options": {
             "num_ctx": ctx_size,
-            "temperature": 0,
+            "temperature": 0.3,
+            "repeat_penalty": 1.2,
+            "repeat_last_n": 128,
         }
     }).encode()
 
