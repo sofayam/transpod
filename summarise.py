@@ -24,9 +24,9 @@ PROMPT_TEMPLATE_JAPANESE = "Please summarise this transcript of a Japanese Podca
 
 PROMPT_TEMPLATE_ENGLISH = "Please summarise this transcript of a Japanese Podcast, in English." + PROMPT_SUMMARY_CONTENTS
 
-PROMPT_TEMPLATE_VOCABULARY = """Please give a list of any advanced Japanese vocabulary that was used in the podcast, 
-along with the kana. Give a simple explanation of each term in Japanese and then in English 
-Do not include loan words, katakana japanese and common words, and focus onnative Japanese vocabulary that is relevant for 
+PROMPT_TEMPLATE_VOCABULARY = """Please give a list of a maximum of 20 Japanese words that were used in the podcast, and
+are worth noting for an intermediate Japanese learner, along with their English translation and explanations. 
+Please include the kana pronunciation. Do not include loan words or カタカナ日本語, and focus on native Japanese vocabulary that is relevant for 
 someone studying Japanese at an intermediate level."""
 
 PROMPT_TEMPLATE_IDIOMS = """Please give a list of any idiomatic expressions 
@@ -35,10 +35,7 @@ that were mentioned in this podcast transcript, along with explanations first in
 PROMPT_TEMPLATE_CULTURE = """Please give a list of any cultural references 
 that were mentioned in this podcast transcript, along with explanations first in Japanese and then in English."""
 
-PROMPT_EPILOGUE = """All output must be in vanilla markdown. 
-
-TRANSCRIPT:
-{transcript}"""
+PROMPT_EPILOGUE = """All output must be in vanilla markdown. Feel free to use tables where appropriate. """
 
 prompts = {
     "japanese": PROMPT_TEMPLATE_JAPANESE,
@@ -50,15 +47,25 @@ prompts = {
 
 def summarise(transcript: str, model: str, ctx_size: int, host: str, section: str) -> str:
 
-    OLLAMA_URL = f"http://{host}:11434/api/generate"
+    OLLAMA_URL = f"http://{host}:11434/api/chat"
 
     prompt = prompts.get(section, PROMPT_TEMPLATE_JAPANESE) + "\n\n" + PROMPT_EPILOGUE
 
     payload = json.dumps({
         "model": model,
-        "prompt": prompt.format(transcript=transcript),
+
         "stream": False,
         "think": False,
+        "messages": [
+        {
+            "role": "system",
+            "content": prompt,
+        },
+        {
+            "role": "user",
+            "content": transcript
+        }
+    ],
         "options": {
             "num_ctx": ctx_size,
             "temperature": 0.3,
@@ -76,7 +83,8 @@ def summarise(transcript: str, model: str, ctx_size: int, host: str, section: st
     try:
         with urllib.request.urlopen(req) as response:
             result = json.load(response)
-            return result["response"].strip()
+
+            return result["message"]["content"].strip()
     except urllib.error.URLError:
         sys.exit("Error: Could not connect to Ollama. Is it running? Try: ollama serve")
     except KeyError:
