@@ -18,7 +18,20 @@ import os
 
 
 
-PROMPT_SUMMARY_CONTENTS = "In the summary, list the main topics discussed, the main arguments, and any significant opinions."
+PROMPT_SUMMARY_CONTENTS = "In the summary, list the main topics discussed and any significant opinions."
+
+PROMPT_TEMPLATE_SIMPLE = """以下のトランスクリプトをNHKウェブやさしいニュースのスタイルで要約してください。
+
+条件：
+・短い文を使ってください
+・難しい漢字にはふりがなをつけてください（例：食べる（たべる））
+・敬語や難しい表現は使わないでください
+・中学生にわかるような言葉を使ってください
+・200文字から500文字でまとめてください
+
+マークダウン形式で書いてください。
+
+"""
 
 PROMPT_TEMPLATE_JAPANESE = "Please summarise this transcript of a Japanese Podcast,  in N3 Japanese" + PROMPT_SUMMARY_CONTENTS
 
@@ -27,12 +40,14 @@ PROMPT_TEMPLATE_ENGLISH = "Please summarise this transcript of a Japanese Podcas
 PROMPT_TEMPLATE_VOCABULARY = """Please give a list of a maximum of 20 Japanese words that were used in the podcast, and
 are worth noting for an intermediate Japanese learner, along with their English translation and explanations. 
 Please include the kana pronunciation. Do not include loan words or カタカナ日本語, and focus on native Japanese vocabulary that is relevant for 
-someone studying Japanese at an intermediate level."""
+someone studying Japanese at an intermediate level.
+Output only the final markdown table. Do not output any intermediate results or drafts.
+"""
 
 PROMPT_TEMPLATE_IDIOMS = """Please give a list of any idiomatic expressions 
 that were mentioned in this podcast transcript, along with explanations first in Japanese and then in English."""
 
-PROMPT_TEMPLATE_CULTURE = """Please give a list of any cultural references 
+PROMPT_TEMPLATE_CULTURE = """Please give a list of at most 10 main cultural references 
 that were mentioned in this podcast transcript, along with explanations first in Japanese and then in English."""
 
 PROMPT_EPILOGUE = """All output must be in vanilla markdown. Feel free to use tables where appropriate. """
@@ -43,6 +58,7 @@ prompts = {
     "vocabulary": PROMPT_TEMPLATE_VOCABULARY,
     "idioms": PROMPT_TEMPLATE_IDIOMS,
     "culture": PROMPT_TEMPLATE_CULTURE,
+    "simple": PROMPT_TEMPLATE_SIMPLE,
 }
 
 def summarise(transcript: str, model: str, ctx_size: int, host: str, section: str) -> str:
@@ -77,11 +93,12 @@ def summarise(transcript: str, model: str, ctx_size: int, host: str, section: st
     req = urllib.request.Request(
         OLLAMA_URL,
         data=payload,
+      
         headers={"Content-Type": "application/json"},
     )
 
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=180,) as response:
             result = json.load(response)
 
             return result["message"]["content"].strip()
@@ -89,6 +106,8 @@ def summarise(transcript: str, model: str, ctx_size: int, host: str, section: st
         sys.exit("Error: Could not connect to Ollama. Is it running? Try: ollama serve")
     except KeyError:
         sys.exit("Error: Unexpected response from Ollama.")
+    except TimeoutError:
+        sys.exit("Error: ****************** Request to Ollama timed out.")
 
 
 def main():
@@ -98,7 +117,7 @@ def main():
     parser.add_argument("--ctx", type=int, default=32768, help="Context window size (default: 32768)")
     parser.add_argument("--save", action="store_true", help="Save the summary to a .summary file")
     parser.add_argument("--host", default="localhost", help="Host for the Ollama API (default: localhost)")
-    parser.add_argument("--section", choices=["japanese", "english", "vocabulary", "idioms", "culture"], help="Only output a specific section of the summary")
+    parser.add_argument("--section", choices=["japanese", "english", "vocabulary", "idioms", "culture", "simple"], help="Only output a specific section of the summary")
     parser.add_argument("--dryrun", action="store_true", help="just print some diagnostics")
     parser.add_argument("--force", action="store_true", help="force action even if file already exists")
     args = parser.parse_args()
@@ -121,7 +140,7 @@ def main():
     output_file = args.transcript.replace(".txt", ".summary." + args.section)
 
     if (not args.force) and args.save and os.path.exists(output_file):
-        print(f"Error: Output file already exists: {output_file}. Use --force to overwrite.", file=sys.stderr)
+        print(f"Info: Output file already exists: {output_file}.", file=sys.stderr)
         sys.exit(1)
 
     summary = summarise(transcript, args.model, args.ctx, args.host, args.section)
