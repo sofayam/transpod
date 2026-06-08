@@ -15,6 +15,8 @@ import urllib.request
 import urllib.error
 import os
 
+default_model="qwen3.5:9b"
+default_ctx = 32768 
 
 
 
@@ -61,7 +63,7 @@ prompts = {
     "simple": PROMPT_TEMPLATE_SIMPLE,
 }
 
-def summarise(transcript: str, model: str, ctx_size: int, host: str, section: str) -> str:
+def summarise(transcript: str, model: str = default_model, ctx_size: int = default_ctx, host: str = "localhost", section: str = "japanese", timeout: int = 180) -> str:
 
     OLLAMA_URL = f"http://{host}:11434/api/chat"
 
@@ -98,7 +100,7 @@ def summarise(transcript: str, model: str, ctx_size: int, host: str, section: st
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=180,) as response:
+        with urllib.request.urlopen(req, timeout=timeout,) as response:
             result = json.load(response)
 
             return result["message"]["content"].strip()
@@ -113,13 +115,14 @@ def summarise(transcript: str, model: str, ctx_size: int, host: str, section: st
 def main():
     parser = argparse.ArgumentParser(description="Summarise a transcript using a local Ollama model.")
     parser.add_argument("transcript", help="Path to the transcript file")
-    parser.add_argument("--model", default="qwen3.5:9b", help="Ollama model to use (default: qwen3.5:9b)")
-    parser.add_argument("--ctx", type=int, default=32768, help="Context window size (default: 32768)")
-    parser.add_argument("--save", action="store_true", help="Save the summary to a .summary file")
+    parser.add_argument("--model", default=default_model, help="Ollama model to use (default: qwen3.5:9b)")
+    parser.add_argument("--ctx", type=int, default=default_ctx, help="Context window size (default: 32768)")
+    parser.add_argument("--save",  action="store_true", help="Save the summary to a .summary file")
     parser.add_argument("--host", default="localhost", help="Host for the Ollama API (default: localhost)")
     parser.add_argument("--section", choices=["japanese", "english", "vocabulary", "idioms", "culture", "simple"], help="Only output a specific section of the summary")
     parser.add_argument("--dryrun", action="store_true", help="just print some diagnostics")
     parser.add_argument("--force", action="store_true", help="force action even if file already exists")
+    parser.add_argument("--timeout", type=int, default=180, help="Timeout for the Ollama API request in seconds (default: 180)")
     args = parser.parse_args()
   
 
@@ -136,14 +139,15 @@ def main():
         print(f"Warning: Transcript is ~{estimated_tokens} tokens, which exceeds --ctx {args.ctx}.", file=sys.stderr)
         print(f"Consider using --ctx {estimated_tokens + 1000} or a model with a larger context window.\n", file=sys.stderr)
 
-    print(f"Summarising with {args.model} (ctx: {args.ctx})...\n", file=sys.stderr)
+    print(f"Summarising {args.transcript} with {args.model} (ctx: {args.ctx})...\n", file=sys.stderr)
     output_file = args.transcript.replace(".txt", ".summary." + args.section)
 
     if (not args.force) and args.save and os.path.exists(output_file):
         print(f"Info: Output file already exists: {output_file}.", file=sys.stderr)
         sys.exit(1)
 
-    summary = summarise(transcript, args.model, args.ctx, args.host, args.section)
+    summary = summarise(transcript, model = args.model, ctx_size = args.ctx, 
+        host = args.host, section = args.section, timeout = args.timeout)
 
 
     if args.save:

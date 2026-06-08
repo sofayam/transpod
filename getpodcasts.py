@@ -8,6 +8,7 @@ import json
 import sys
 from transcribefast import transcribe
 from addDuration import process_mp3
+from summarise import summarise
 import datetime
 
 logfile = "podcatch.log"
@@ -255,13 +256,21 @@ def download(rss_feed_url, lang, locale, download_folder, latest, relative, firs
                 process_mp3(mp3path)
                 logdownload(folder_name, episode_title)
                 podcatch = True  # Mark that a new episode was downloaded
-                if transcribe:
-                    if transcribeAsWell:
-                        transcribe(mp3path, lang=lang, locale=locale)
-                        if sync:
-                            print(f"[{folder_name}] Marked for syncing to NAS")
-                    else:
-                        print(f"[{folder_name}] Downloaded but did NOT transcribe {mp3path}")
+                
+                if transcribeAsWell:
+                            transcribe(mp3path, lang=lang, locale=locale)
+                            if lang == "ja":
+                                transcript_path = mp3path.replace(".mp3", ".json.txt")
+                                # load the text file of the transcript (this is NOT json but plain text)
+                                transcript = open(transcript_path, "r", encoding="utf-8").read()
+                                summary = summarise(transcript, section="english", host="localhost", timeout=400)
+                                with open(mp3path.replace(".mp3", ".json.summary.english"), "w", encoding="utf-8") as summary_file:
+                                    summary_file.write(summary)
+                                print(f"[{summary_file.name}] generated")
+                            if sync:
+                                print(f"[{folder_name}] Marked for syncing to NAS")
+                else:
+                    print(f"[{folder_name}] Downloaded but did NOT transcribe {mp3path}")
             else:
                 print(f"[{folder_name}] Failed to download the episode. HTTP Status Code: {response.status_code}", file=sys.stderr)
 
@@ -304,7 +313,7 @@ def parse_args():
     parser.add_argument("-i", "--image", help="get the podcast image", action="store_true")
 
     parser.add_argument("-m", "--save_meta", help="save podcast metadata from feed", action="store_true")
-    
+   
     args = parser.parse_args()
 
     # Validate the number of arguments (only 1 or 2 numbers allowed)

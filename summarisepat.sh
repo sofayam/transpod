@@ -21,6 +21,6 @@ fi
 
 # Process the matched files
 for file in "${files[@]}"; do
-	python summarise.py $file --save
+  python summarise.py $file --save --section english  --timeout 400
 done
 

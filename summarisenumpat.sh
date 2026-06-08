@@ -7,7 +7,8 @@ setopt extendedglob
 # Parameters
 # $1 base directory
 # $2 starting number
-# $3 host (default: localhost)  
+# $3 section types (default: "simple japanese english vocabulary idioms culture")
+# $4 host (default: localhost)  
 
 # Check if the user provided a base directory and a number
 if [[ -z "$1" ]] || [[ -z "$2" ]]; then
@@ -16,7 +17,13 @@ if [[ -z "$1" ]] || [[ -z "$2" ]]; then
 fi
 
 if [[ -n "$3" ]]; then
-  host="$3"
+  sections="$3"
+else
+  sections="simple japanese english vocabulary idioms culture"
+fi
+
+if [[ -n "$4" ]]; then
+  host="$4"
 else
   host="localhost"
 fi
@@ -46,10 +53,11 @@ for ((i = $2;; i++)); do
   # process the matched file
   file="${files[1]}"
   echo "Processing file: $file"
+
   # iterate over the section types and call summarise.py for each section type
-  for section in simple japanese english vocabulary idioms culture; do   
+  for section in $sections; do   
     echo "Processing file $file section: $section"
-    python summarise.py $file --save --section $section --host $host
+    python summarise.py $file --save --section $section --host $host --timeout 200
   done
 done
 
