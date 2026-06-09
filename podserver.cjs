@@ -24,11 +24,11 @@ if (process.argv.length > 2) {
     PORT = parseInt(process.argv[2])
 }
 
-BADFILES = [".gitignore", ".DS_Store", "ReadMe.md"]
-console = require("console"),
-    error = console.error
+const BADFILES = [".gitignore", ".DS_Store", "ReadMe.md"]
+const console = require("console");
+const error = console.error
 //handlebars = require('express-handlebars'),
-path = require('path');
+
 
 const exphbs = require('express-handlebars');
 const { getDefaultAutoSelectFamilyAttemptTimeout } = require('net')
@@ -131,8 +131,8 @@ app.get("/", (req, res, next) => {
     let pcData = []
     contents.forEach(file => {
         // console.log(file)
-        let meta = readMetaPod(file)
-        podEntry = { name: file, ...meta }
+        const meta = readMetaPod(file)
+        const podEntry = { name: file, ...meta }
         pcData.push(podEntry)
     })
     const languages = getLanguages();
@@ -142,8 +142,8 @@ app.get("/", (req, res, next) => {
 function compareEpisode(ep1, ep2) {
 
     // TBD include various sorting criteria here based on data in _config.md
-    i1 = getIndex(ep1.displayname)
-    i2 = getIndex(ep2.displayname)
+    const i1 = getIndex(ep1.displayname)
+    const i2 = getIndex(ep2.displayname)
     return i1.index.localeCompare(i2.index)
 
 }
@@ -151,14 +151,14 @@ function compareEpisode(ep1, ep2) {
 function readConfig(podName) {
     const configPath = path.join(__dirname, "content", podName, "_config.md");
     if (fs.existsSync(configPath)) {
-        returnVal = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const returnVal = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
         return returnVal
     }
     return {}
 }
 
 function hasSortInfo(podName) {
-    let meta = readConfig(podName)
+    const meta = readConfig(podName)
     if (meta.sortInfo) {
         return true
     }
@@ -166,10 +166,10 @@ function hasSortInfo(podName) {
 }
 
 app.get("/pod/:id", (req, res, next) => {
-    let podName = req.params.id
-    let epPath = path.join(__dirname, "content", podName)
-    // console.log("epPath ", epPath) 
-    let contents = fs.readdirSync(epPath)
+    const podName = req.params.id
+    const epPath = path.join(__dirname, "content", podName)
+    // console.log("epPath ", epPath)
+    const contents = fs.readdirSync(epPath)
     let epData = []
     // find no of chunks for each file
     let sortonpubdate = false
@@ -184,10 +184,10 @@ app.get("/pod/:id", (req, res, next) => {
         if (!(BADFILES.includes(file)))
             if (file.substring(file.length - 4) === ".mp3") {
                 // filter out all the chunks from the main list
-                fname = file.substring(0, file.length - 4)
+                const fname = file.substring(0, file.length - 4)
                 // get the info file
                 let info = {}
-                let infopath = path.join(epPath, fname + ".info")
+                const infopath = path.join(epPath, fname + ".info")
                 if (fs.existsSync(infopath)) {
                     info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
                 }
@@ -198,7 +198,6 @@ app.get("/pod/:id", (req, res, next) => {
 
             }
     })
-
     const meta = readMetaPod(podName)
     // if we only want unfinished
     if (meta.show === "unfinished") {
@@ -229,7 +228,7 @@ app.get("/pod/:id", (req, res, next) => {
 function isUnfinished(podName, epName) {
     // console.log("isUnfinished", podName, epName)
 
-    meta = readMetaEp(podName, epName)
+    const meta = readMetaEp(podName, epName)
     return !meta.finished
 
 }
@@ -247,7 +246,8 @@ function getNextep(ep) {
     }
 
     // Determine the next episode based on the sorting order
-    const meta = readMetaPod(orderList[0].podName); // Assuming all episodes belong to the same podcast
+    const firstEp = orderList[0];
+    const meta = readMetaPod(firstEp.podName || firstEp.pod); 
     const isLatestFirst = meta && meta.order === "latest";
 
     if (isLatestFirst) {
@@ -275,28 +275,27 @@ function getTimeListenedToday() {
 }
 
 app.get("/play/:pod/:ep", async (req, res, next) => {
-    let pod = req.params.pod
-    let ep = req.params.ep
+    const pod = req.params.pod
+    const ep = req.params.ep
     let startTime = req.query.t || null;
 
-    let epPath = path.join(__dirname, "content", pod, ep)
-    mp3name = "/" + pod + "/" + encodeURIComponent(ep) + ".mp3"
-    meta = readMetaEp(pod, ep)
+    const epPath = path.join(__dirname, "content", pod, ep)
+    const mp3name = "/" + pod + "/" + encodeURIComponent(ep) + ".mp3"
+    const meta = readMetaEp(pod, ep)
 
     if (startTime === null) {
         startTime = meta.timeInPod || 0;
     }
 
-    transcript = getTranscript(pod, ep)
-    transcripttext = transcript.text
-    transcriptsrc = transcript.src
-    nextep = encodeURIComponent(getNextep(ep))
-    let infopath = epPath + ".info"
+    const transcript = getTranscript(pod, ep)
+    const transcripttext = transcript.text
+    const transcriptsrc = transcript.src
+    const nextep = encodeURIComponent(getNextep(ep))
+    const infopath = epPath + ".info"
     let info = {}
     if (fs.existsSync(infopath)) {
         info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
     }
-    info.language = readConfig(pod).lang || 'ja';
     const config = readConfig(pod);
     info.language = config.lang || 'ja';
 
@@ -681,7 +680,7 @@ function readMetaPod(folderName) {
     const metaPath = path.join(__dirname, "content", `${folderName}.meta`);
     if (fs.existsSync(metaPath)) {
         try {
-            returnVal = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+            const returnVal = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
             if (!returnVal.coreset) {
                 returnVal.coreset = "false"
             }
@@ -904,7 +903,8 @@ const getTranscript = (pod, ep) => {
 
 
      let source = "whisper"
-        transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
+        const transcriptfile = path.join(__dirname, "content", pod, ep + ".json")
+        let transcripttext = ""
         try {
             transcripttext = fs.readFileSync(transcriptfile, 'utf-8')
         } catch (error) {
@@ -1405,9 +1405,9 @@ app.get("/transformhtmltranscriptstojson", (req, res) => {
 
 
 app.get("/legacyChartForSentimentalReasonsOnlyDoNotCallThis", (req, res) => {
-    let { epList, times } = listenData();
+    const { epList, times } = listenData();
 
-    let listenDays = {}
+    const listenDays = {}
     let totpod = 0
     let totseconds = 0
 
@@ -1418,10 +1418,10 @@ app.get("/legacyChartForSentimentalReasonsOnlyDoNotCallThis", (req, res) => {
                     // get time of ep
                     // {date: "2025-03-01", count: 2, totalMinutes: 70},
                     totpod += 1
-                    let time = ep.info.itunes_duration
-                    let seconds = parseTimeToSeconds(time)
+                    const time = ep.info.itunes_duration
+                    const seconds = parseTimeToSeconds(time)
                     totseconds += seconds
-                    let date = ep.meta.timeLastOpened.substring(0, 10)
+                    const date = ep.meta.timeLastOpened.substring(0, 10)
                     if (listenDays[date]) {
                         listenDays[date].count++
                         listenDays[date].totalSeconds += seconds
@@ -1435,13 +1435,13 @@ app.get("/legacyChartForSentimentalReasonsOnlyDoNotCallThis", (req, res) => {
 
     // convert listenDays to an array of objects with date, count, time
 
-    listenList = []
+    const listenList = []
     Object.keys(listenDays).sort().forEach(key => {
-        let entry = { date: key, count: listenDays[key].count, totalMinutes: listenDays[key].totalSeconds / 60 }
+        const entry = { date: key, count: listenDays[key].count, totalMinutes: listenDays[key].totalSeconds / 60 }
         listenList.push(entry)
     })
 
-    tottime = formatSeconds(totseconds)
+    const tottime = formatSeconds(totseconds)
 
     res.render("chart", { listenList, totpod, tottime, layout: false })
 })
