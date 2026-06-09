@@ -38,6 +38,26 @@
                 }
             });
         }
+
+        document.querySelectorAll('.finish-toggle').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const pod = e.target.getAttribute('data-pod');
+                const ep = e.target.getAttribute('data-ep');
+                fetch('/toggle-finished', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pod, ep })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error toggling status');
+                    }
+                });
+            });
+        });
       }
     </script>
 
@@ -63,12 +83,12 @@
     {{#each eps}}
         <div>
           <li>
-            <a href="/play/{{../pod}}/{{encoded}}">
               {{#if finished}}
-                ✅
+                <span class="finish-toggle" style="cursor: pointer;" data-pod="{{../pod}}" data-ep="{{encoded}}">✅</span>
               {{else}}
                 🔴
               {{/if}}
+            <a href="/play/{{../pod}}/{{encoded}}">
               {{displayname}} [{{info.itunes_duration}}]
             </a>
             <div style="font-size: 13px; color: #888; margin-left: 2em;">

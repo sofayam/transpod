@@ -778,7 +778,26 @@ app.post('/update-meta-pod', (req, res) => {
     } else {
         res.status(400).json({ success: false, message: "Invalid Podcast" });
     }
+
 });
+
+app.post('/toggle-finished', (req, res) => {
+    const { pod, ep } = req.body;
+    const decodedEp = decodeURIComponent(ep);
+    const meta = readMetaEp(pod, decodedEp);
+    const metaPath = path.join(__dirname, "content", pod, decodedEp + ".meta");
+
+    meta.finished = !meta.finished;
+
+    try {
+        writeMetaEp(metaPath, meta.finished, meta.timeLastOpened, meta.timeInPod);
+        res.json({ success: true, finished: meta.finished });
+    } catch (error) {
+        console.error(`Error toggling finished status for ${pod}/${decodedEp}:`, error);
+        res.status(500).json({ success: false, message: "Error updating status" });
+    }
+});
+
 
 app.post('/update-meta-global', (req, res) => {
 
