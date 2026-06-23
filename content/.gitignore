@@ -8,6 +8,4 @@
 */*.json.summary.*
 */transcripts
 *.meta
-TIMEDATA.db
-words.db
-REQUESTS.db
+*.db
