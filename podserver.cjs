@@ -60,6 +60,22 @@ app.use((req, res, next) => {
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
+const skippedPaths = new Set(['/stats', '/css/stats.css', '/stats/drilldown']);
+app.use((req, res, next) => {
+    if (skippedPaths.has(req.path)) return next();
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        const timestamp = new Date().toISOString();
+        reqDb.run(
+            `INSERT INTO request_log (method, path, status, timestamp, duration_ms) VALUES (?, ?, ?, ?, ?)`,
+            [req.method, req.path, res.statusCode, timestamp, duration],
+            (err) => { if (err) console.error('Error logging request:', err.message); }
+        );
+    });
+    next();
+});
+
 function getPods(forceAll = false, language = 'all') {
 
     let coresetOnly = readMetaGlobal().coresetOnly === "true"
@@ -1223,6 +1239,169 @@ const wordsDb = new sqlite3.Database(path.join(__dirname, 'content', 'WORDS.db')
             });
         });
     }
+});
+
+// Initialize request statistics database
+const reqDb = new sqlite3.Database(path.join(__dirname, 'content', 'REQUESTS.db'), (err) => {
+    if (err) {
+        console.error('Error opening request stats database:', err.message);
+    } else {
+        console.log('Connected to SQLite database: REQUESTS.db');
+        reqDb.run(`
+            CREATE TABLE IF NOT EXISTS request_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                method TEXT NOT NULL,
+                path TEXT NOT NULL,
+                status INTEGER NOT NULL,
+                timestamp TEXT NOT NULL,
+                duration_ms INTEGER NOT NULL DEFAULT 0
+            )
+        `, (err) => {
+            if (err) {
+                console.error('Error creating request_log table:', err.message);
+            }
+        });
+
+        reqDb.run(`DELETE FROM request_log WHERE timestamp < ?`,
+            [new Date(Date.now() - 90 * 86400000).toISOString()],
+            (err) => {
+                if (err) console.error('Error purging old request logs:', err.message);
+                else console.log('Purged request logs older than 90 days');
+            }
+        );
+    }
+});
+
+app.get("/stats", (req, res) => {
+    const resolution = req.query.resolution || 'hours';
+    const validResolutions = ['minutes', 'hours', 'days', 'months'];
+    if (!validResolutions.includes(resolution)) {
+        return res.status(400).send('Invalid resolution');
+    }
+
+    const defaultCounts = { minutes: 30, hours: 24, days: 30, months: 12 };
+    const count = Math.min(parseInt(req.query.count, 10) || defaultCounts[resolution], 200);
+
+    const now = new Date();
+    const nowMs = now.getTime();
+    let bucketLen, bucketExpr, truncateKey, parseKey, formatLabel;
+
+    switch (resolution) {
+        case 'minutes':
+            bucketLen = 60000;
+            bucketExpr = "SUBSTR(timestamp, 1, 16)";
+            truncateKey = (d) => new Date(Math.floor(d.getTime() / 60000) * 60000).toISOString().slice(0, 16);
+            parseKey = (k) => new Date(k + ':00Z');
+            formatLabel = (k) => k.slice(11, 16);
+            break;
+        case 'hours':
+            bucketLen = 3600000;
+            bucketExpr = "SUBSTR(timestamp, 1, 13)";
+            truncateKey = (d) => new Date(Math.floor(d.getTime() / 3600000) * 3600000).toISOString().slice(0, 13);
+            parseKey = (k) => new Date(k + ':00:00Z');
+            formatLabel = (k) => {
+                const d = parseKey(k);
+                return `${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')} ${String(d.getUTCHours()).padStart(2,'0')}:00`;
+            };
+            break;
+        case 'days':
+            bucketLen = 86400000;
+            bucketExpr = "SUBSTR(timestamp, 1, 10)";
+            truncateKey = (d) => d.toISOString().slice(0, 10);
+            parseKey = (k) => new Date(k + 'T00:00:00Z');
+            formatLabel = (k) => k;
+            break;
+        case 'months':
+            bucketLen = 0;
+            bucketExpr = "SUBSTR(timestamp, 1, 7)";
+            truncateKey = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;
+            parseKey = (k) => new Date(k + '-01T00:00:00Z');
+            formatLabel = (k) => k;
+            break;
+    }
+
+    let since;
+    if (resolution === 'months') {
+        const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - count + 1, 1));
+        since = d.toISOString();
+    } else {
+        since = new Date(nowMs - count * bucketLen).toISOString();
+    }
+
+    reqDb.all(`SELECT ${bucketExpr} AS bucket, COUNT(*) AS count, ROUND(AVG(duration_ms)) AS avg_duration FROM request_log WHERE timestamp >= ? GROUP BY bucket ORDER BY bucket ASC`, [since], (err, rows) => {
+        if (err) {
+            console.error('Error querying request stats:', err.message);
+            return res.status(500).send('Database error');
+        }
+
+        const dataMap = {};
+        rows.forEach(r => { dataMap[r.bucket] = { count: r.count, avgDuration: r.avg_duration || 0 }; });
+
+        const buckets = [];
+        for (let i = 0; i < count; i++) {
+            let key, bucketStart, bucketEnd;
+
+            if (resolution === 'months') {
+                const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (count - 1 - i), 1));
+                key = truncateKey(d);
+                bucketStart = new Date(d);
+                bucketEnd = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+            } else {
+                const startMs = Math.floor((nowMs - (count - 1 - i) * bucketLen) / bucketLen) * bucketLen;
+                bucketStart = new Date(startMs);
+                bucketEnd = new Date(startMs + bucketLen);
+                key = truncateKey(bucketStart);
+            }
+
+            const data = dataMap[key] || { count: 0, avgDuration: 0 };
+            buckets.push({
+                label: formatLabel(key),
+                count: data.count,
+                avgDuration: data.avgDuration,
+                since: bucketStart.toISOString(),
+                until: bucketEnd.toISOString()
+            });
+        }
+
+        const totalRequests = buckets.reduce((s, b) => s + b.count, 0);
+        const weightedSum = buckets.reduce((s, b) => s + b.count * b.avgDuration, 0);
+        const avgDuration = totalRequests > 0 ? Math.round(weightedSum / totalRequests) : 0;
+
+        res.render("stats", {
+            buckets: JSON.stringify(buckets),
+            resolution,
+            count,
+            totalRequests,
+            avgDuration,
+            layout: false
+        });
+    });
+});
+
+app.get("/stats/drilldown", (req, res) => {
+    const since = req.query.since;
+    const until = req.query.until;
+    if (!since || !until) {
+        return res.status(400).json({ error: 'since and until query params required' });
+    }
+    reqDb.all(`
+        SELECT path, method, COUNT(*) AS count,
+               SUM(CASE WHEN status >= 200 AND status < 300 THEN 1 ELSE 0 END) AS status2xx,
+               SUM(CASE WHEN status >= 400 AND status < 500 THEN 1 ELSE 0 END) AS status4xx,
+               SUM(CASE WHEN status >= 500 THEN 1 ELSE 0 END) AS status5xx,
+               ROUND(AVG(duration_ms)) AS avg_duration
+        FROM request_log
+        WHERE timestamp >= ? AND timestamp < ?
+        GROUP BY path, method
+        ORDER BY count DESC
+        LIMIT 20
+    `, [since, until], (err, rows) => {
+        if (err) {
+            console.error('Error querying drilldown:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);
+    });
 });
 
 app.get("/autocomplete", (req, res) => {

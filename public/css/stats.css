@@ -1,0 +1,238 @@
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.controls-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.res-btns {
+    display: flex;
+    gap: 4px;
+}
+
+.res-btn {
+    padding: 6px 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #f8f9fa;
+    cursor: pointer;
+    font-size: 13px;
+    color: #555;
+    transition: all 0.2s;
+}
+
+.res-btn:hover {
+    background: #e9ecef;
+}
+
+.res-btn.active {
+    background: #0066cc;
+    color: #fff;
+    border-color: #0066cc;
+}
+
+.count-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #555;
+}
+
+.count-group select {
+    padding: 5px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.auto-refresh-group {
+    font-size: 13px;
+    color: #555;
+    margin-left: auto;
+}
+
+.summary {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+}
+
+.summary-item {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px 20px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    min-width: 140px;
+}
+
+.summary-value {
+    display: block;
+    font-size: 22px;
+    font-weight: 700;
+    color: #0066cc;
+    line-height: 1.3;
+}
+
+.summary-label {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.drilldown-panel {
+    margin-top: 16px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.drilldown-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.drilldown-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.drilldown-range {
+    font-size: 12px;
+    color: #888;
+    flex: 1;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+.drilldown-body {
+    padding: 0;
+    overflow-x: auto;
+}
+
+.drilldown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.drilldown-body th {
+    text-align: left;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #e0e0e0;
+    font-weight: 600;
+    color: #555;
+    white-space: nowrap;
+}
+
+.drilldown-body td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.drilldown-body tr:hover td {
+    background: #f5f8ff;
+}
+
+.cell-path {
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.status-ok {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.status-warn {
+    color: #e68a00;
+    font-weight: 600;
+}
+
+.status-err {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.drilldown-empty {
+    padding: 24px;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+}
+
+.hidden {
+    display: none;
+}
+
+#top {
+    background-color: #6c757d;
+    color: #f8f9fa;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-block;
+    margin: 20px auto;
+    text-align: center;
+}
+
+#top:hover {
+    background-color: #5a6268;
+    transform: scale(1.05);
+}
+
+#top:active {
+    background-color: #495057;
+    transform: scale(0.95);
+}
