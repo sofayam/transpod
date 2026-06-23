@@ -69,6 +69,7 @@
                         <tr>
                             <th>Path</th>
                             <th>Method</th>
+                            <th>Clients</th>
                             <th>Count</th>
                             <th>2xx</th>
                             <th>4xx</th>
@@ -216,9 +217,13 @@
                     }
                     data.forEach(row => {
                         const tr = document.createElement('tr');
+                        const clients = row.topAddresses
+                            ? row.topAddresses.map(a => escapeHtml(a.addr)).join('<br>')
+                            : '\u2014';
                         tr.innerHTML =
                             '<td class="cell-path">' + escapeHtml(row.path) + '</td>' +
                             '<td>' + escapeHtml(row.method) + '</td>' +
+                            '<td class="cell-clients">' + clients + '</td>' +
                             '<td>' + row.count + '</td>' +
                             '<td class="status-ok">' + (row.status2xx || 0) + '</td>' +
                             '<td class="status-warn">' + (row.status4xx || 0) + '</td>' +

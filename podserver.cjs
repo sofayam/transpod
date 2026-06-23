@@ -7,6 +7,7 @@ const http = require('http');
 const sqlite3 = require('sqlite3').verbose();
 
 var app = express()
+app.set('trust proxy', 1)
 
 const appConfig = require('./transpod.config.json');
 
@@ -60,6 +61,13 @@ app.use((req, res, next) => {
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
+function normalizeIp(ip) {
+    if (ip === '::1') return '127.0.0.1';
+    if (ip.startsWith('::ffff:')) return ip.slice(7);
+    const pct = ip.indexOf('%');
+    return pct !== -1 ? ip.slice(0, pct) : ip;
+}
+
 const skippedPaths = new Set(['/stats', '/css/stats.css', '/stats/drilldown']);
 app.use((req, res, next) => {
     if (skippedPaths.has(req.path)) return next();
@@ -68,8 +76,8 @@ app.use((req, res, next) => {
         const duration = Date.now() - start;
         const timestamp = new Date().toISOString();
         reqDb.run(
-            `INSERT INTO request_log (method, path, status, timestamp, duration_ms) VALUES (?, ?, ?, ?, ?)`,
-            [req.method, req.path, res.statusCode, timestamp, duration],
+            `INSERT INTO request_log (method, path, status, timestamp, duration_ms, client_addr) VALUES (?, ?, ?, ?, ?, ?)`,
+            [req.method, req.path, res.statusCode, timestamp, duration, normalizeIp(req.ip)],
             (err) => { if (err) console.error('Error logging request:', err.message); }
         );
     });
@@ -1254,11 +1262,18 @@ const reqDb = new sqlite3.Database(path.join(__dirname, 'content', 'REQUESTS.db'
                 path TEXT NOT NULL,
                 status INTEGER NOT NULL,
                 timestamp TEXT NOT NULL,
-                duration_ms INTEGER NOT NULL DEFAULT 0
+                duration_ms INTEGER NOT NULL DEFAULT 0,
+                client_addr TEXT
             )
         `, (err) => {
             if (err) {
                 console.error('Error creating request_log table:', err.message);
+            } else {
+                reqDb.run(`ALTER TABLE request_log ADD COLUMN client_addr TEXT`, (err2) => {
+                    if (err2 && !err2.message.includes('duplicate column')) {
+                        console.error('Error adding client_addr column:', err2.message);
+                    }
+                });
             }
         });
 
@@ -1400,7 +1415,31 @@ app.get("/stats/drilldown", (req, res) => {
             console.error('Error querying drilldown:', err.message);
             return res.status(500).json({ error: err.message });
         }
-        res.json(rows);
+        if (rows.length === 0) return res.json([]);
+        let completed = 0;
+        rows.forEach((row) => {
+            reqDb.all(
+                `SELECT client_addr, COUNT(*) AS cnt
+                 FROM request_log
+                 WHERE timestamp >= ? AND timestamp < ? AND path = ? AND method = ?
+                 GROUP BY client_addr
+                 ORDER BY cnt DESC
+                 LIMIT 3`,
+                [since, until, row.path, row.method],
+                (err2, addrRows) => {
+                    if (!err2) {
+                        row.topAddresses = addrRows.map(a => ({
+                            addr: a.client_addr,
+                            count: a.cnt
+                        }));
+                    }
+                    completed++;
+                    if (completed === rows.length) {
+                        res.json(rows);
+                    }
+                }
+            );
+        });
     });
 });
 

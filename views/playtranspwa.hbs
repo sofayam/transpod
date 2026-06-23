@@ -696,14 +696,52 @@ audio.addEventListener("progress", () => {
             }
         });
 
-        window.onbeforeunload = function () {
-            saveMeta()
-        }
-
-        setInterval(() => {
+        let saveMetaTimer = setInterval(() => {
             if (! (audio.paused))
                 saveMeta()
         }, 15000);
+
+        let listenTimeTimer = setInterval(() => {
+            if (audioChanged()) {
+                addListeningTime();
+            }
+        }, listenSecondsUpdateInterval * 1000);
+
+        function clearAllIntervals() {
+            clearInterval(saveMetaTimer);
+            clearInterval(listenTimeTimer);
+        }
+
+        function restartAllIntervals() {
+            clearAllIntervals();
+            saveMetaTimer = setInterval(() => {
+                if (!(audio.paused))
+                    saveMeta();
+            }, 15000);
+            listenTimeTimer = setInterval(() => {
+                if (audioChanged()) {
+                    addListeningTime();
+                }
+            }, listenSecondsUpdateInterval * 1000);
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                saveMeta();
+                clearAllIntervals();
+            } else if (document.visibilityState === 'visible') {
+                restartAllIntervals();
+            }
+        });
+
+        window.addEventListener('pagehide', () => {
+            clearAllIntervals();
+            const meta = { finished, timeLastOpened, timeInPod: audio.currentTime };
+            try {
+                navigator.sendBeacon('/update-meta-ep',
+                    new Blob([JSON.stringify({ name: "{{mp3file}}", ...meta })], { type: 'application/json' }));
+            } catch (_) {}
+        });
 
         function saveMeta(andNext = false) {
             let meta = { finished, timeLastOpened, timeInPod: audio.currentTime }
@@ -766,13 +804,6 @@ audio.addEventListener("progress", () => {
             })
             .catch(error => console.error("Fetch error:", error));
     }
-
-    // Call updateTime every 10 seconds while the audio is playing
-    setInterval(() => {
-        if (audioChanged()) {
-            addListeningTime();
-        }
-    }, listenSecondsUpdateInterval * 1000); // Convert seconds to milliseconds
 
 });
 
