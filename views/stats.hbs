@@ -221,7 +221,7 @@
                             ? row.topAddresses.map(a => escapeHtml(a.addr)).join('<br>')
                             : '\u2014';
                         tr.innerHTML =
-                            '<td class="cell-path">' + escapeHtml(row.path) + '</td>' +
+                            '<td class="cell-path">' + escapeHtml(decodeURIComponent(row.path)) + '</td>' +
                             '<td>' + escapeHtml(row.method) + '</td>' +
                             '<td class="cell-clients">' + clients + '</td>' +
                             '<td>' + row.count + '</td>' +

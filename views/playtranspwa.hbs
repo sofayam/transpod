@@ -526,17 +526,19 @@
         audio.addEventListener("pause", () => {
             playpauseBtn.innerHTML = "▶"
             if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+            clearAllIntervals();
         })
-
 
         audio.addEventListener("ended", () => {
             playpauseBtn.innerHTML = "▶"
             if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+            clearAllIntervals();
         })
         
         audio.addEventListener("play", () => {
             playpauseBtn.innerHTML = "⏸"
             if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+            restartAllIntervals();
         })
 
 
@@ -724,15 +726,6 @@ audio.addEventListener("progress", () => {
                 }
             }, listenSecondsUpdateInterval * 1000);
         }
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                saveMeta();
-                clearAllIntervals();
-            } else if (document.visibilityState === 'visible') {
-                restartAllIntervals();
-            }
-        });
 
         window.addEventListener('pagehide', () => {
             clearAllIntervals();
