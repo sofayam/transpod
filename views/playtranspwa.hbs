@@ -242,8 +242,8 @@
                                 selector.appendChild(btn);
                             });
                         }
-                        // Default to 'default' if present, otherwise the first one
-                        const initialType = data.summaries.includes('default') ? 'default' : data.summaries[0];
+                        // Default to 'english' if present, otherwise the first one
+                        const initialType = data.summaries.includes('english') ? 'english' : data.summaries[0];
                         fetchSummary(epEncoded, initialType);
                     } else {
                         summaryText.innerHTML = "<p>No summary available for this episode.</p>";
@@ -265,7 +265,7 @@
                 else btn.classList.remove("active");
             });
 
-            summaryText.innerHTML = "Loading " + (type === 'default' ? '' : type) + " summary...";
+            summaryText.innerHTML = "Loading " + (type === 'english' ? '' : type) + " summary...";
             fetch(`/get-summary/{{pod}}/${epEncoded}?type=${type}`)
                 .then(response => response.json())
                 .then(data => {
@@ -446,8 +446,8 @@
                             url = `http://${window.location.hostname}:{{dictPort}}/search/${encodeURIComponent(cleanWord)}?podcast=${encodeURIComponent("{{pod}}")}&episode=${encodeURIComponent("{{{mp3file}}}")}&timestamp=${segmentTime}`;
                         } else if (lang == "sv") {
                             url = `https://folkets-lexikon.csc.kth.se/folkets/folkets.en.html#lookup&${cleanWord}&expandDirectly=t&presentQuestions=f`
-                            // maybe more buried params in this url?
-                            // https://folkets-lexikon.csc.kth.se/folkets/folkets.en.html#&expandDirectly=t&presentQuestions=f&newQuestionsImmediately=f&doSpellingCorrection=t&extraKeyboard=f&suggestionProposals=t&lookUpIn=1
+                        } else if (lang == "es") {
+                            url = `https://dle.rae.es/${cleanWord}`
                         }
 
                         // Use Wiktionary for other languages
