@@ -32,7 +32,7 @@
                         <img src="/geticon?pod={{this.name}}" alt="{{this.name}} icon" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; vertical-align: middle;">
                     </a>
                 </div>
-                <div class="col folder-name" style="flex-grow: 1;"><a href="/pod/{{this.name}}">{{this.name}}</a></div>
+                <div class="col folder-name" style="flex-grow: 1;"><a href="/pod/{{this.name}}">{{this.name}}</a>{{#if this.tags.length}}<span class="tag-badges">{{#each this.tags}}<span class="badge">{{this}}</span>{{/each}}</span>{{/if}}</div>
                 <div class="col">
                     <select class="order" data-folder="{{this.name}}">
                         <option value="oldest" {{#if (eq this.order "oldest")}}selected{{/if}}>⏳↓</option>

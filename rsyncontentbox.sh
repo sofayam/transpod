@@ -1,3 +1,3 @@
-rsync --exclude='*.meta' --exclude='*.db'  -av ./content/ mark@box.local:/mnt/appdata/transpod/content
+rsync --exclude='*.meta' --exclude='*.db' --exclude='*.note' -av ./content/ mark@box.local:/mnt/appdata/transpod/content
 
 

@@ -83,6 +83,7 @@
     {{#each eps}}
         <div>
           <li>
+              {{#if hasNotes}}<span style="font-size: 0.85em;">📝</span>{{/if}}
               {{#if finished}}
                 <span class="finish-toggle" style="cursor: pointer;" data-pod="{{../pod}}" data-ep="{{encoded}}">✅</span>
               {{else}}

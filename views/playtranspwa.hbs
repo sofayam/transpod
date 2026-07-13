@@ -78,6 +78,84 @@
             text-decoration: underline;
             text-decoration-style: dotted;
         }
+        /* Notes Modal Styles */
+        #notes-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+        }
+        .notes-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .notes-close:hover,
+        .notes-close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        #notes-history .stat-item {
+            display: inline-block;
+            margin-right: 16px;
+        }
+        #notes-display .note-tag {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 8px;
+            background: #e0e0e0;
+            font-size: 0.75rem;
+            color: #333;
+            margin-right: 4px;
+        }
+        #notes-tags .note-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 8px;
+            background: #e0e0e0;
+            font-size: 0.8rem;
+            color: #333;
+            margin-right: 4px;
+        }
+        .tag-badge-edit {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 8px;
+            background: #e0e0e0;
+            font-size: 0.8rem;
+            color: #333;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+        .tag-badge-edit .tag-remove {
+            cursor: pointer;
+            margin-left: 4px;
+            color: #999;
+            font-weight: bold;
+        }
+        .tag-badge-edit .tag-remove:hover {
+            color: #e00;
+        }
+        #notes-tag-suggestions div {
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        #notes-tag-suggestions div:hover,
+        #notes-tag-suggestions div.active {
+            background: #e8e8e8;
+        }
+        #notes-display h1, #notes-display h2, #notes-display h3 {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -87,6 +165,31 @@
             <span class="close">&times;</span>
             <div id="summary-selector" style="display: none;"></div>
             <div id="summary-text">Loading summary...</div>
+        </div>
+    </div>
+
+    <!-- Notes Modal -->
+    <div id="notes-modal">
+        <div class="modal-content">
+            <span class="notes-close">&times;</span>
+            <div id="notes-history" style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; color: #666;"></div>
+            <div id="notes-tags" style="margin-bottom: 10px;"></div>
+            <div id="notes-tag-editor" style="display:none; margin-bottom: 10px;">
+                <div id="notes-tag-badges" style="margin-bottom: 6px;"></div>
+                <div style="position:relative; display:inline-block;">
+                    <input type="text" id="notes-tag-input" placeholder="Add tag..." style="padding:4px 8px; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; width: 150px;">
+                    <div id="notes-tag-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #ccc; border-radius:0 0 4px 4px; max-height:150px; overflow-y:auto; z-index:10;"></div>
+                </div>
+            </div>
+            <div id="notes-display"></div>
+            <div style="margin-top: 10px;"><button id="notes-edit" style="padding:6px 14px; cursor:pointer;">✏️ Edit</button></div>
+            <div id="notes-editor" style="display:none;">
+                <textarea id="notes-textarea" style="width:100%; min-height:300px; font-family:monospace; font-size:14px; padding:8px; box-sizing:border-box;"></textarea>
+                <div style="margin-top: 10px;">
+                    <button id="notes-save" style="padding:6px 14px; cursor:pointer;">Save</button>
+                    <button id="notes-cancel" style="padding:6px 14px; cursor:pointer; margin-left:6px;">Cancel</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -115,8 +218,7 @@
             <button id="rewind">⏪ -5s</button>
             <button id="playpause">▶</button>
             <button id="finished">✅</button>
-            <button id="increase-font">A↑</button>
-            <button id="decrease-font">A↓</button>
+            <button id="notes-btn"{{#unless hasNotes}} style="opacity: 0.5;"{{/unless}}>{{#if hasNotes}}📝{{else}}📄{{/if}}</button>
         
             </div>
   
@@ -205,9 +307,6 @@
         const playpauseBtn = document.getElementById("playpause");
         // const pauseBtn = document.getElementById("pause");
         const rewindBtn = document.getElementById("rewind");
-        const increaseFontBtn = document.getElementById("increase-font");
-
-        const decreaseFontBtn = document.getElementById("decrease-font");
         const finishBtn = document.getElementById("finished");
         const timeDisplay = document.getElementById("timeDisplay");
         const toggleModeBtn = document.getElementById("toggle-mode");
@@ -290,6 +389,254 @@
                 modal.style.display = "none";
             }
         }
+
+        // Notes Modal Logic
+        const notesModal = document.getElementById("notes-modal");
+        const notesDisplay = document.getElementById("notes-display");
+        const notesEditor = document.getElementById("notes-editor");
+        const notesTextarea = document.getElementById("notes-textarea");
+        const notesHistory = document.getElementById("notes-history");
+        const notesTagsDisplay = document.getElementById("notes-tags");
+        const notesTagEditor = document.getElementById("notes-tag-editor");
+        const notesTagBadges = document.getElementById("notes-tag-badges");
+        const notesTagInput = document.getElementById("notes-tag-input");
+        const notesCloseBtn = document.querySelector(".notes-close");
+        const notesBtn = document.getElementById("notes-btn");
+        const notesSaveBtn = document.getElementById("notes-save");
+        const notesCancelBtn = document.getElementById("notes-cancel");
+
+        let currentTags = [];
+
+        function formatSecondsToHM(totalSeconds) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            if (h > 0) return `${h}h ${m}m`;
+            return `${m}m`;
+        }
+
+        function renderNoteTags(container, tags) {
+            container.innerHTML = tags.map(t => `<span class="note-tag">${t}</span>`).join("");
+        }
+
+        function renderTagEditor() {
+            notesTagBadges.innerHTML = currentTags.map((t, i) =>
+                `<span class="tag-badge-edit">${t}<span class="tag-remove" data-idx="${i}">&times;</span></span>`
+            ).join("");
+            notesTagBadges.querySelectorAll(".tag-remove").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    currentTags.splice(parseInt(btn.dataset.idx), 1);
+                    renderTagEditor();
+                });
+            });
+        }
+
+        function addTag() {
+            const val = notesTagInput.value.trim();
+            if (val && !currentTags.includes(val)) {
+                currentTags.push(val);
+                renderTagEditor();
+            }
+            notesTagInput.value = "";
+        }
+
+        function buildFrontmatter(tags, body) {
+            if (tags.length === 0) return body;
+            const yaml = "---\ntags:\n" + tags.map(t => `  - ${t}`).join("\n") + "\n---\n";
+            return yaml + body;
+        }
+
+        const epMp3Path = "{{{mp3file}}}";
+        const epParts = epMp3Path.split("/");
+        const epName = epParts[epParts.length - 1].replace(".mp3", "");
+
+        notesBtn.addEventListener("click", () => {
+            notesModal.style.display = "block";
+            notesEditor.style.display = "none";
+            notesTagEditor.style.display = "none";
+            notesDisplay.style.display = "block";
+            notesDisplay.innerHTML = "Loading...";
+            notesHistory.innerHTML = "";
+            notesTagsDisplay.innerHTML = "";
+
+            Promise.all([
+                fetch(`/notes/{{pod}}/${encodeURIComponent(epName)}`).then(r => r.json()),
+                fetch(`/listening-stats/{{pod}}/${encodeURIComponent(epName)}`).then(r => r.json())
+            ]).then(([notesData, statsData]) => {
+                // Listening history summary
+                if (statsData.success && statsData.totalListened > 0) {
+                    notesHistory.innerHTML =
+                        `<span class="stat-item"> listened: ${formatSecondsToHM(statsData.totalListened)}</span>` +
+                        `<span class="stat-item"> since: ${statsData.firstListened}</span>`;
+                } else {
+                    notesHistory.innerHTML = "<em>No listening data yet.</em>";
+                }
+
+                // Notes content
+                if (notesData.success) {
+                    currentTags = notesData.tags || [];
+                    notesTextarea.value = notesData.body;
+                    renderNoteTags(notesTagsDisplay, currentTags);
+                    if (notesData.body.trim()) {
+                        notesDisplay.innerHTML = marked.parse(notesData.body);
+                        notesDisplay.style.display = "block";
+                        notesEditor.style.display = "none";
+                        notesEditBtn.style.display = "inline-block";
+                    } else {
+                        // No notes yet — go straight to edit mode
+                        notesDisplay.style.display = "none";
+                        notesEditor.style.display = "block";
+                        notesTagEditor.style.display = "block";
+                        notesEditBtn.style.display = "none";
+                        renderTagEditor();
+                        notesTextarea.focus();
+                    }
+                } else {
+                    notesDisplay.innerHTML = "<p>Error loading notes.</p>";
+                }
+            }).catch(err => {
+                console.error("Error loading notes:", err);
+                notesDisplay.innerHTML = "<p>Error loading notes.</p>";
+            });
+        });
+
+        notesCloseBtn.addEventListener("click", () => {
+            notesModal.style.display = "none";
+        });
+
+        window.addEventListener("click", (event) => {
+            if (event.target == notesModal) {
+                notesModal.style.display = "none";
+            }
+        });
+
+        // Double-click notes display to enter edit mode
+        const notesEditBtn = document.getElementById("notes-edit");
+        notesEditBtn.addEventListener("click", () => {
+            notesEditor.style.display = "block";
+            notesTagEditor.style.display = "block";
+            notesDisplay.style.display = "none";
+            notesEditBtn.style.display = "none";
+            renderTagEditor();
+            notesTextarea.focus();
+        });
+
+        notesSaveBtn.addEventListener("click", () => {
+            const body = notesTextarea.value;
+            const content = buildFrontmatter(currentTags, body);
+            fetch(`/notes/{{pod}}/${encodeURIComponent(epName)}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content })
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    notesEditor.style.display = "none";
+                    notesTagEditor.style.display = "none";
+                    notesDisplay.style.display = "block";
+                    notesEditBtn.style.display = "inline-block";
+                    notesBtn.textContent = "📝";
+                    notesBtn.style.opacity = "1";
+                    currentTags = data.tags || currentTags;
+                    renderNoteTags(notesTagsDisplay, currentTags);
+                    if (body.trim()) {
+                        notesDisplay.innerHTML = marked.parse(body);
+                    } else {
+                        notesDisplay.innerHTML = "";
+                    }
+                } else {
+                    alert("Error saving notes: " + (data.message || "Unknown error"));
+                }
+            }).catch(err => {
+                console.error("Error saving notes:", err);
+                alert("Error saving notes.");
+            });
+        });
+
+        notesCancelBtn.addEventListener("click", () => {
+            notesEditor.style.display = "none";
+            notesTagEditor.style.display = "none";
+            notesDisplay.style.display = "block";
+            notesEditBtn.style.display = "inline-block";
+            // Re-fetch to restore tags to saved state
+            fetch(`/notes/{{pod}}/${encodeURIComponent(epName)}`).then(r => r.json()).then(data => {
+                if (data.success) {
+                    currentTags = data.tags || [];
+                    renderNoteTags(notesTagsDisplay, currentTags);
+                }
+            });
+        });
+
+        // Tag autocomplete
+        let allTags = [];
+        const notesTagSuggestions = document.getElementById("notes-tag-suggestions");
+        let activeSuggestion = -1;
+
+        fetch("/tags").then(r => r.json()).then(tags => { allTags = tags; }).catch(() => {});
+
+        function showSuggestions(query) {
+            const matches = allTags.filter(t =>
+                t.toLowerCase().includes(query.toLowerCase()) && !currentTags.includes(t)
+            );
+            if (matches.length === 0 || !query) {
+                notesTagSuggestions.style.display = "none";
+                return;
+            }
+            activeSuggestion = -1;
+            notesTagSuggestions.innerHTML = matches.map((t, i) =>
+                `<div data-tag="${t}">${t}</div>`
+            ).join("");
+            notesTagSuggestions.style.display = "block";
+            notesTagSuggestions.querySelectorAll("div").forEach(div => {
+                div.addEventListener("mousedown", (e) => {
+                    e.preventDefault();
+                    const val = div.dataset.tag;
+                    if (!currentTags.includes(val)) {
+                        currentTags.push(val);
+                        renderTagEditor();
+                    }
+                    notesTagInput.value = "";
+                    notesTagSuggestions.style.display = "none";
+                });
+            });
+        }
+
+        notesTagInput.addEventListener("input", () => {
+            showSuggestions(notesTagInput.value.trim());
+        });
+
+        notesTagInput.addEventListener("keydown", (e) => {
+            const items = notesTagSuggestions.querySelectorAll("div");
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                activeSuggestion = Math.min(activeSuggestion + 1, items.length - 1);
+                items.forEach((d, i) => d.classList.toggle("active", i === activeSuggestion));
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                activeSuggestion = Math.max(activeSuggestion - 1, 0);
+                items.forEach((d, i) => d.classList.toggle("active", i === activeSuggestion));
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                if (activeSuggestion >= 0 && items[activeSuggestion]) {
+                    const val = items[activeSuggestion].dataset.tag;
+                    if (!currentTags.includes(val)) {
+                        currentTags.push(val);
+                        renderTagEditor();
+                    }
+                    notesTagInput.value = "";
+                    notesTagSuggestions.style.display = "none";
+                } else {
+                    addTag();
+                }
+            } else if (e.key === ",") {
+                e.preventDefault();
+                addTag();
+            } else if (e.key === "Escape") {
+                notesTagSuggestions.style.display = "none";
+            }
+        });
+
+        notesTagInput.addEventListener("blur", () => {
+            notesTagSuggestions.style.display = "none";
+        });
 
         let searchMode = false;
       
@@ -671,20 +1018,6 @@ audio.addEventListener("progress", () => {
 
         rewindBtn.addEventListener("click", () => {
             audio.currentTime = Math.max(0, audio.currentTime - 5);
-        });
-        // Font size controls
-        increaseFontBtn.addEventListener("click", () => {
-        
-            fontSize += 2;
-             setFontSize()
-      
-        });
-
-        decreaseFontBtn.addEventListener("click", () => {
-          
-                fontSize -= 2;
-                setFontSize()
-            
         });
 
         toggleModeBtn.addEventListener("click", () => {

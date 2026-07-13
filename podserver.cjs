@@ -154,9 +154,9 @@ app.get("/", (req, res, next) => {
     let contents = getPods(false, selectedLanguage)
     let pcData = []
     contents.forEach(file => {
-        // console.log(file)
         const meta = readMetaPod(file)
-        const podEntry = { name: file, ...meta }
+        const tags = getAllTagsForPod(file)
+        const podEntry = { name: file, ...meta, tags }
         pcData.push(podEntry)
     })
     const languages = getLanguages();
@@ -217,7 +217,8 @@ app.get("/pod/:id", (req, res, next) => {
                 }
                 epData.push({
                     podName, displayname: fname, encoded: encodeURIComponent(fname),
-                    finished: !(isUnfinished(podName, fname)), info, language: lang
+                    finished: !(isUnfinished(podName, fname)), info, language: lang,
+                    hasNotes: fs.existsSync(path.join(epPath, fname + ".note"))
                 })
 
             }
@@ -326,6 +327,9 @@ app.get("/play/:pod/:ep", async (req, res, next) => {
     const totalSeconds = await getTimeListenedToday()
     const timeListenedToday = formatSeconds(totalSeconds)
 
+    const notesPath = path.join(__dirname, "content", pod, ep + ".note")
+    const hasNotes = fs.existsSync(notesPath)
+
     // console.log("Time listened today: ", timeListenedToday)
 
     res.render("playtranspwa", {
@@ -335,6 +339,7 @@ app.get("/play/:pod/:ep", async (req, res, next) => {
         info,
         startTime,
         timeListenedToday,
+        hasNotes,
         dictPort: DICT_PORT,
         layout: false,
         transcriptionMethod: getTranscriptionMethod(pod, ep)
@@ -728,6 +733,52 @@ function readMetaGlobal() {
     return { coresetOnly: "true" }; // Default values
 }
 
+function parseNotes(raw) {
+    const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+    if (frontmatterMatch) {
+        const yamlBlock = frontmatterMatch[1];
+        const body = frontmatterMatch[2];
+        const tagsMatch = yamlBlock.match(/tags:\s*\n((?:\s*-\s*.+\n?)+)/);
+        const tags = tagsMatch
+            ? tagsMatch[1].split('\n').filter(l => l.trim()).map(l => l.replace(/^\s*-\s*/, '').trim())
+            : [];
+        return { tags, body };
+    }
+    return { tags: [], body: raw };
+}
+
+function readNotes(podName, episodeName) {
+    const notesPath = path.join(__dirname, "content", podName, episodeName + ".note");
+    if (fs.existsSync(notesPath)) {
+        try {
+            return parseNotes(fs.readFileSync(notesPath, 'utf-8'));
+        } catch (error) {
+            console.error(`Error reading notes for ${podName}/${episodeName}:`, error);
+        }
+    }
+    return { tags: [], body: "" };
+}
+
+function writeNotes(podName, episodeName, rawContent) {
+    const notesPath = path.join(__dirname, "content", podName, episodeName + ".note");
+    fs.writeFileSync(notesPath, rawContent, 'utf-8');
+}
+
+function getAllTagsForPod(podName) {
+    const podDir = path.join(__dirname, "content", podName);
+    if (!fs.existsSync(podDir)) return [];
+    const files = fs.readdirSync(podDir).filter(f => f.endsWith('.note'));
+    const allTags = new Set();
+    for (const file of files) {
+        try {
+            const raw = fs.readFileSync(path.join(podDir, file), 'utf-8');
+            const { tags } = parseNotes(raw);
+            tags.forEach(t => allTags.add(t));
+        } catch (_) {}
+    }
+    return [...allTags];
+}
+
 function writeMetaEp(metaPath, finished, timeLastOpened, timeInPod) {
     const metaData = { finished, timeLastOpened, timeInPod }
     fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 4), 'utf-8')
@@ -883,7 +934,71 @@ app.post('/log-lookup', (req, res) => {
     }
 });
 
+app.get('/notes/:pod/:ep', (req, res) => {
+    const podName = req.params.pod;
+    const episodeName = decodeURIComponent(req.params.ep).replace(/\.mp3$/, '');
+    const { tags, body } = readNotes(podName, episodeName);
+    res.json({ success: true, tags, body });
+});
 
+app.post('/notes/:pod/:ep', (req, res) => {
+    const podName = req.params.pod;
+    const episodeName = decodeURIComponent(req.params.ep).replace(/\.mp3$/, '');
+    const { content } = req.body;
+    if (content === undefined) {
+        return res.status(400).json({ success: false, message: 'Missing content.' });
+    }
+    try {
+        writeNotes(podName, episodeName, content);
+        const { tags } = readNotes(podName, episodeName);
+        res.json({ success: true, tags });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error saving notes.' });
+    }
+});
+
+app.get('/listening-stats/:pod/:ep', (req, res) => {
+    const podName = req.params.pod;
+    const episodeName = decodeURIComponent(req.params.ep).replace(/\.mp3$/, '');
+    const query = `
+        SELECT SUM(total_seconds) AS total_listened,
+               MIN(date) AS first_listened,
+               MAX(date) AS last_listened
+        FROM podcast_time
+        WHERE podcast_name = ? AND episode_name = ?
+    `;
+    db.get(query, [podName, episodeName], (err, row) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Database error.' });
+        }
+        res.json({
+            success: true,
+            totalListened: row.total_listened || 0,
+            firstListened: row.first_listened || null,
+            lastListened: row.last_listened || null
+        });
+    });
+});
+
+app.get('/tags', (req, res) => {
+    const contentDir = path.join(__dirname, "content");
+    const pods = fs.readdirSync(contentDir).filter(f => {
+        const full = path.join(contentDir, f);
+        return fs.statSync(full).isDirectory();
+    });
+    const allTags = new Set();
+    for (const pod of pods) {
+        const podDir = path.join(contentDir, pod);
+        const files = fs.readdirSync(podDir).filter(f => f.endsWith('.note'));
+        for (const file of files) {
+            try {
+                const { tags } = parseNotes(fs.readFileSync(path.join(podDir, file), 'utf-8'));
+                tags.forEach(t => allTags.add(t));
+            } catch (_) {}
+        }
+    }
+    res.json([...allTags].sort());
+});
 
 app.use(express.static("public"))
 app.use(express.static("content"))
