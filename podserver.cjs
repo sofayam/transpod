@@ -62,6 +62,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 function normalizeIp(ip) {
+    if (!ip) return 'unknown';
     if (ip === '::1') return '127.0.0.1';
     if (ip.startsWith('::ffff:')) return ip.slice(7);
     const pct = ip.indexOf('%');
@@ -960,22 +961,34 @@ app.post('/notes/:pod/:ep', (req, res) => {
 app.get('/listening-stats/:pod/:ep', (req, res) => {
     const podName = req.params.pod;
     const episodeName = decodeURIComponent(req.params.ep).replace(/\.mp3$/, '');
-    const query = `
+    const summaryQuery = `
         SELECT SUM(total_seconds) AS total_listened,
                MIN(date) AS first_listened,
                MAX(date) AS last_listened
         FROM podcast_time
         WHERE podcast_name = ? AND episode_name = ?
     `;
-    db.get(query, [podName, episodeName], (err, row) => {
+    const dailyQuery = `
+        SELECT date, total_seconds
+        FROM podcast_time
+        WHERE podcast_name = ? AND episode_name = ?
+        ORDER BY date ASC
+    `;
+    db.get(summaryQuery, [podName, episodeName], (err, row) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error.' });
         }
-        res.json({
-            success: true,
-            totalListened: row.total_listened || 0,
-            firstListened: row.first_listened || null,
-            lastListened: row.last_listened || null
+        db.all(dailyQuery, [podName, episodeName], (err2, days) => {
+            if (err2) {
+                return res.status(500).json({ success: false, message: 'Database error.' });
+            }
+            res.json({
+                success: true,
+                totalListened: row.total_listened || 0,
+                firstListened: row.first_listened || null,
+                lastListened: row.last_listened || null,
+                days: days || []
+            });
         });
     });
 });

@@ -464,9 +464,15 @@
             ]).then(([notesData, statsData]) => {
                 // Listening history summary
                 if (statsData.success && statsData.totalListened > 0) {
-                    notesHistory.innerHTML =
-                        `<span class="stat-item"> listened: ${formatSecondsToHM(statsData.totalListened)}</span>` +
-                        `<span class="stat-item"> since: ${statsData.firstListened}</span>`;
+                    let html = `<span class="stat-item"> listened: ${formatSecondsToHM(statsData.totalListened)}</span>`;
+                    if (statsData.days && statsData.days.length > 0) {
+                        html += '<div style="margin-top:6px; font-size:0.85em;">';
+                        statsData.days.forEach(d => {
+                            html += `<span class="stat-item">${d.date}: ${formatSecondsToHM(d.total_seconds)}</span>`;
+                        });
+                        html += '</div>';
+                    }
+                    notesHistory.innerHTML = html;
                 } else {
                     notesHistory.innerHTML = "<em>No listening data yet.</em>";
                 }
