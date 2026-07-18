@@ -106,6 +106,48 @@
             display: inline-block;
             margin-right: 16px;
         }
+        #notes-words h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.95em;
+            color: #333;
+        }
+        #notes-words .word-entry {
+            margin-bottom: 8px;
+            padding: 6px 8px;
+            background: #f8f8f8;
+            border-radius: 6px;
+            font-size: 0.88em;
+        }
+        #notes-words .word-kanji {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+        #notes-words .word-link {
+            text-decoration: none;
+            color: inherit;
+        }
+        #notes-words .word-link:hover {
+            text-decoration: underline;
+        }
+        #notes-words .word-reading {
+            color: #666;
+            margin-right: 8px;
+        }
+        #notes-words .word-meanings {
+            color: #444;
+            font-size: 0.92em;
+        }
+        #notes-words .word-count {
+            float: right;
+            color: #999;
+            font-size: 0.82em;
+        }
+        #notes-words .word-date {
+            float: right;
+            color: #999;
+            font-size: 0.82em;
+        }
         #notes-display .note-tag {
             display: inline-block;
             padding: 1px 6px;
@@ -173,6 +215,7 @@
         <div class="modal-content">
             <span class="notes-close">&times;</span>
             <div id="notes-history" style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; color: #666;"></div>
+            <div id="notes-words" style="display:none; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #eee;"></div>
             <div id="notes-tags" style="margin-bottom: 10px;"></div>
             <div id="notes-tag-editor" style="display:none; margin-bottom: 10px;">
                 <div id="notes-tag-badges" style="margin-bottom: 6px;"></div>
@@ -404,6 +447,7 @@
         const notesBtn = document.getElementById("notes-btn");
         const notesSaveBtn = document.getElementById("notes-save");
         const notesCancelBtn = document.getElementById("notes-cancel");
+        const notesWordsDiv = document.getElementById("notes-words");
 
         let currentTags = [];
 
@@ -457,11 +501,20 @@
             notesDisplay.innerHTML = "Loading...";
             notesHistory.innerHTML = "";
             notesTagsDisplay.innerHTML = "";
+            notesWordsDiv.style.display = "none";
+            notesWordsDiv.innerHTML = "";
+
+            const lang = "{{info.language}}";
+            const epPath = "{{{mp3file}}}";
+            const podName = "{{pod}}";
 
             Promise.all([
-                fetch(`/notes/{{pod}}/${encodeURIComponent(epName)}`).then(r => r.json()),
-                fetch(`/listening-stats/{{pod}}/${encodeURIComponent(epName)}`).then(r => r.json())
-            ]).then(([notesData, statsData]) => {
+                fetch(`/notes/${encodeURIComponent(podName)}/${encodeURIComponent(epName)}`).then(r => r.json()),
+                fetch(`/listening-stats/${encodeURIComponent(podName)}/${encodeURIComponent(epName)}`).then(r => r.json()),
+                lang === "ja"
+                    ? fetch(`http://${window.location.hostname}:{{dictPort}}/api/wiki/podcast-words?podcast=${encodeURIComponent(podName)}&episode=${epPath}`).then(r => r.json()).catch(() => null)
+                    : Promise.resolve(null)
+            ]).then(([notesData, statsData, wordsData]) => {
                 // Listening history summary
                 if (statsData.success && statsData.totalListened > 0) {
                     let html = `<span class="stat-item"> listened: ${formatSecondsToHM(statsData.totalListened)}</span>`;
@@ -498,6 +551,33 @@
                     }
                 } else {
                     notesDisplay.innerHTML = "<p>Error loading notes.</p>";
+                }
+
+                // Looked-up words (Japanese podcasts only)
+                if (wordsData && wordsData.words && wordsData.words.length > 0) {
+                    wordsData.words.sort((a, b) => {
+                        const aLast = a.lookups && a.lookups.length ? a.lookups[a.lookups.length - 1].timestamp : '';
+                        const bLast = b.lookups && b.lookups.length ? b.lookups[b.lookups.length - 1].timestamp : '';
+                        return bLast.localeCompare(aLast);
+                    });
+                    let whtml = `<h4>Looked-up words (${wordsData.words.length})</h4>`;
+                    wordsData.words.forEach(w => {
+                        const meanings = (w.meanings || []).join('; ');
+                        const count = w.lookups ? w.lookups.length : 0;
+                        const countLabel = count > 1 ? `<span class="word-count">×${count}</span>` : '';
+                        const lastLookup = w.lookups && w.lookups.length ? w.lookups[w.lookups.length - 1] : null;
+                        const dateStr = lastLookup ? new Date(lastLookup.timestamp).toLocaleDateString() : '';
+                        const dictUrl = `http://${window.location.hostname}:{{dictPort}}/wiki/word/${encodeURIComponent(w.word || w.slug)}`;
+                        whtml += `<div class="word-entry">
+                            <a href="${dictUrl}" target="_blank" class="word-link"><span class="word-kanji">${w.word || w.slug}</span></a>
+                            <span class="word-reading">${w.reading || ''}</span>
+                            ${countLabel}
+                            <span class="word-date">${dateStr}</span>
+                            <div class="word-meanings">${meanings}</div>
+                        </div>`;
+                    });
+                    notesWordsDiv.innerHTML = whtml;
+                    notesWordsDiv.style.display = "block";
                 }
             }).catch(err => {
                 console.error("Error loading notes:", err);

@@ -277,7 +277,7 @@ def download(rss_feed_url, lang, locale, download_folder, latest, relative, firs
     # Sync only if new episodes were downloaded
     if sync and podcatch:
         print(f"[{folder_name}] Syncing to NAS")
-        command = f"rsync --exclude='*.meta' -avz --progress {download_folder}/ mark@box.local:/mnt/appdata/transpod/content/{folder_name}"
+        command = f"rsync --exclude='*.meta' --exclude='*.note' -avz --progress {download_folder}/ mark@box.local:/mnt/appdata/transpod/content/{folder_name}"
         print(command)
         os.system(command)
     elif sync:
