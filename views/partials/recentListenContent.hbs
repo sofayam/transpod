@@ -1,0 +1,14 @@
+<h1>Recent Listening Activity (total: {{totalTime}}) </h1>
+<ul>
+{{#each epList}}
+    <li>
+        {{this.meta.timeLastOpened}} <a href="/play/{{this.pod}}/{{this.encoded}}">  {{this.pod}}: {{this.name}} 
+        
+        {{#if finished}}
+            ✅
+        {{else}}
+            🔴
+        {{/if}}</a>
+    </li>
+{{/each}}
+</ul>

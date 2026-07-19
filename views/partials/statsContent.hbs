@@ -1,0 +1,221 @@
+<h1>Request Statistics</h1>
+
+<div class="controls-bar" style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+    <div class="res-btns">
+        <button class="res-btn" data-res="minutes">Minutes</button>
+        <button class="res-btn active" data-res="hours">Hours</button>
+        <button class="res-btn" data-res="days">Days</button>
+        <button class="res-btn" data-res="months">Months</button>
+    </div>
+    <div class="count-group">
+        <label for="countSelect">Show:</label>
+        <select id="countSelect"></select>
+    </div>
+</div>
+
+<div class="summary" style="display: flex; gap: 20px; margin-bottom: 15px;">
+    <div class="summary-item">
+        <span class="summary-value" id="totalRequests">{{totalRequests}}</span>
+        <span class="summary-label">Total Requests</span>
+    </div>
+    <div class="summary-item">
+        <span class="summary-value" id="avgDuration">{{avgDuration}} ms</span>
+        <span class="summary-label">Avg Duration</span>
+    </div>
+</div>
+
+<div class="chart-container" style="position: relative; height: 400px;">
+    <canvas id="statsChart"></canvas>
+</div>
+
+<div id="drilldown" class="drilldown-panel" style="display: none; margin-top: 20px;">
+    <div class="drilldown-header">
+        <h3>Popular URLs</h3>
+        <span class="drilldown-range" id="drilldownRange"></span>
+        <button id="closeDrilldown" class="close-btn">&times;</button>
+    </div>
+    <div class="drilldown-body">
+        <table>
+            <thead>
+                <tr>
+                    <th>Path</th>
+                    <th>Method</th>
+                    <th>Clients</th>
+                    <th>Count</th>
+                    <th>2xx</th>
+                    <th>4xx</th>
+                    <th>5xx</th>
+                    <th>Avg ms</th>
+                </tr>
+            </thead>
+            <tbody id="drilldownBody"></tbody>
+        </table>
+        <div class="drilldown-empty" id="drilldownEmpty">No requests in this period.</div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const buckets = {{{buckets}}};
+    const currentRes = '{{resolution}}';
+    const currentCount = parseInt('{{count}}', 10);
+
+    const countOptions = {
+        minutes: [15, 30, 60],
+        hours: [6, 12, 24, 48],
+        days: [7, 14, 30],
+        months: [3, 6, 12]
+    };
+
+    let chartInstance = null;
+
+    function setupControls() {
+        document.querySelectorAll('.res-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.res === currentRes);
+            btn.addEventListener('click', () => {
+                const opts = countOptions[btn.dataset.res];
+                const def = opts ? opts[0] : 24;
+                window._statsLoadContent(btn.dataset.res, def);
+            });
+        });
+
+        const sel = document.getElementById('countSelect');
+        const opts = countOptions[currentRes] || [24];
+        opts.forEach(n => {
+            const o = document.createElement('option');
+            o.value = n;
+            o.textContent = n;
+            if (n === currentCount) o.selected = true;
+            sel.appendChild(o);
+        });
+        sel.addEventListener('change', () => {
+            window._statsLoadContent(currentRes, sel.value);
+        });
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('statsChart').getContext('2d');
+        const labels = buckets.map(b => b.label);
+        const counts = buckets.map(b => b.count);
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Requests',
+                    data: counts,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: function(e) {
+                    const elements = this.getElementsAtEventForMode(e, 'index', { intersect: true });
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        const b = buckets[idx];
+                        fetchDrilldown(b.since, b.until, b.label);
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            afterBody: function(context) {
+                                const idx = context[0].dataIndex;
+                                const b = buckets[idx];
+                                return 'Avg duration: ' + b.avgDuration + ' ms';
+                            }
+                        }
+                    },
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxRotation: 45,
+                            font: { size: 10 }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Request Count'
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function fetchDrilldown(since, until, label) {
+        const panel = document.getElementById('drilldown');
+        const tbody = document.getElementById('drilldownBody');
+        const empty = document.getElementById('drilldownEmpty');
+        const range = document.getElementById('drilldownRange');
+
+        range.textContent = label || (since + ' — ' + until);
+        tbody.innerHTML = '';
+        empty.style.display = 'none';
+        panel.style.display = 'block';
+
+        fetch('/stats/drilldown?since=' + encodeURIComponent(since) + '&until=' + encodeURIComponent(until))
+            .then(r => r.json())
+            .then(data => {
+                if (!data || data.length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    const clients = row.topAddresses
+                        ? row.topAddresses.map(a => escapeHtml(a.addr)).join('<br>')
+                        : '—';
+                    tr.innerHTML =
+                        '<td class="cell-path">' + escapeHtml(decodeURIComponent(row.path)) + '</td>' +
+                        '<td>' + escapeHtml(row.method) + '</td>' +
+                        '<td class="cell-clients">' + clients + '</td>' +
+                        '<td>' + row.count + '</td>' +
+                        '<td class="status-ok">' + (row.status2xx || 0) + '</td>' +
+                        '<td class="status-warn">' + (row.status4xx || 0) + '</td>' +
+                        '<td class="status-err">' + (row.status5xx || 0) + '</td>' +
+                        '<td>' + (row.avg_duration || 0) + '</td>';
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                console.error('Drilldown fetch error:', err);
+                empty.textContent = 'Error loading data.';
+                empty.style.display = 'block';
+            });
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    setupControls();
+    renderChart();
+
+    document.getElementById('closeDrilldown').addEventListener('click', () => {
+        document.getElementById('drilldown').style.display = 'none';
+    });
+})();
+
+window._statsLoadContent = function(resolution, count) {
+    if (typeof window.loadReportContent === 'function') {
+        window.loadReportContent('stats', null, resolution, count);
+    }
+};
+</script>

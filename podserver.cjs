@@ -681,6 +681,210 @@ app.get("/recentListen", (req, res) => {
     res.render("recentListen", { epList, totalTime, layout: false })
 })
 
+// API endpoints for popup content (render partials only)
+app.get("/api/recentPublish", (req, res) => {
+    let podPath = path.join(__dirname, "content")
+    let contents = getPods()
+    let epList = []
+    contents.forEach(podName => {
+        if (!(BADFILES.includes(podName))) {
+            let ppath = path.join(podPath, podName)
+            let eps = fs.readdirSync(ppath, { withFileTypes: true })
+                .filter(dirent => dirent.isFile() && dirent.name.endsWith('.info'))
+                .map(dirent => dirent.name);
+            eps.forEach(ep => {
+                let infopath = path.join(ppath, ep)
+                let info = JSON.parse(fs.readFileSync(infopath, 'utf-8'))
+                if (info.published_parsed) {
+                    let barename = ep.slice(0, -5)
+                    let transcriptionMethod = getTranscriptionMethod(podName, barename)
+                    let epentry = { pod: podName, name: barename, encoded: encodeURIComponent(barename), info, finished: !(isUnfinished(podName, barename)), transcriptionMethod }
+                    epList.push(epentry)
+                }
+            })
+        }
+    })
+    epList.sort((a, b) => comparePublishedParsed(b.info.published_parsed, a.info.published_parsed))
+    epList = epList.slice(0, 100)
+    res.render("partials/recentPublishContent", { epList, layout: false })
+})
+
+app.get("/api/recentListen", (req, res) => {
+    let { epList, times } = listenData();
+    let totalTime = addTimes(times)
+    epList = epList.filter(ep => ep.meta.timeLastOpened !== 0)
+    epList.sort((a, b) => b.meta.timeLastOpened.localeCompare(a.meta.timeLastOpened))
+    epList = epList.slice(0, 100)
+    res.render("partials/recentListenContent", { epList, totalTime, layout: false })
+})
+
+app.get("/api/chartFromDB", (req, res) => {
+    const selectedLanguage = req.query.language ?? 'ja';
+    let query = `
+        SELECT date, language, SUM(total_seconds) AS totalSeconds
+        FROM podcast_time
+    `;
+    const params = [];
+    if (selectedLanguage && selectedLanguage !== 'all') {
+        query += ' WHERE language = ?';
+        params.push(selectedLanguage);
+    }
+    query += `
+        GROUP BY date, language
+        ORDER BY date ASC
+    `;
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            console.error('Error querying database:', err.message);
+            return res.status(500).send('Database error.');
+        }
+        db.all('SELECT DISTINCT language FROM podcast_time', [], (langErr, langs) => {
+            if (langErr) {
+                console.error('Error querying languages:', langErr.message);
+                return res.status(500).send('Database error.');
+            }
+            db.get('SELECT MIN(date) as minDate, MAX(date) as maxDate FROM podcast_time', [], (dateErr, dateRange) => {
+                if (dateErr) {
+                    console.error('Error querying date range:', dateErr.message);
+                    return res.status(500).send('Database error.');
+                }
+                if (rows.length === 0) {
+                    return res.render("partials/chartContent", { listenList: '[]', tottime: '0:00:00', languages: langs, selectedLanguage, layout: false });
+                }
+                const dataByDate = {};
+                rows.forEach(row => {
+                    if (!dataByDate[row.date]) {
+                        dataByDate[row.date] = {
+                            date: row.date,
+                            totalMinutes: 0,
+                            languages: {}
+                        };
+                    }
+                    dataByDate[row.date].languages[row.language] = row.totalSeconds / 60;
+                    dataByDate[row.date].totalMinutes += row.totalSeconds / 60;
+                });
+                const listenList = [];
+                if (dateRange.minDate && dateRange.maxDate) {
+                    const startDate = new Date(dateRange.minDate);
+                    const endDate = new Date(dateRange.maxDate);
+                    endDate.setDate(endDate.getDate() + 1);
+                    for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
+                        const dateString = d.toISOString().split('T')[0];
+                        if (dataByDate[dateString]) {
+                            listenList.push(dataByDate[dateString]);
+                        } else {
+                            listenList.push({
+                                date: dateString,
+                                totalMinutes: 0,
+                                languages: {}
+                            });
+                        }
+                    }
+                }
+                const totseconds = rows.reduce((sum, row) => sum + row.totalSeconds, 0);
+                const tottime = formatSeconds(totseconds);
+                res.render("partials/chartContent", { listenList: JSON.stringify(listenList), tottime, languages: langs, selectedLanguage, layout: false });
+            });
+        });
+    });
+})
+
+app.get("/api/stats", (req, res) => {
+    const resolution = req.query.resolution || 'hours';
+    const validResolutions = ['minutes', 'hours', 'days', 'months'];
+    if (!validResolutions.includes(resolution)) {
+        return res.status(400).send('Invalid resolution');
+    }
+    const defaultCounts = { minutes: 30, hours: 24, days: 30, months: 12 };
+    const count = Math.min(parseInt(req.query.count, 10) || defaultCounts[resolution], 200);
+
+    const now = new Date();
+    const nowMs = now.getTime();
+    let bucketLen, bucketExpr, truncateKey, parseKey, formatLabel;
+
+    switch (resolution) {
+        case 'minutes':
+            bucketLen = 60000;
+            bucketExpr = "SUBSTR(timestamp, 1, 16)";
+            truncateKey = (d) => new Date(Math.floor(d.getTime() / 60000) * 60000).toISOString().slice(0, 16);
+            parseKey = (k) => new Date(k + ':00Z');
+            formatLabel = (k) => k.slice(11, 16);
+            break;
+        case 'hours':
+            bucketLen = 3600000;
+            bucketExpr = "SUBSTR(timestamp, 1, 13)";
+            truncateKey = (d) => new Date(Math.floor(d.getTime() / 3600000) * 3600000).toISOString().slice(0, 13);
+            parseKey = (k) => new Date(k + ':00:00Z');
+            formatLabel = (k) => k.slice(11, 13) + ':00';
+            break;
+        case 'days':
+            bucketLen = 86400000;
+            bucketExpr = "SUBSTR(timestamp, 1, 10)";
+            truncateKey = (d) => new Date(Math.floor(d.getTime() / 86400000) * 86400000).toISOString().slice(0, 10);
+            parseKey = (k) => new Date(k + 'T00:00:00Z');
+            formatLabel = (k) => k.slice(5, 10);
+            break;
+        case 'months':
+            bucketLen = 2592000000;
+            bucketExpr = "SUBSTR(timestamp, 1, 7)";
+            truncateKey = (d) => d.toISOString().slice(0, 7);
+            parseKey = (k) => new Date(k + '-01T00:00:00Z');
+            formatLabel = (k) => k;
+            break;
+    }
+
+    const sinceMs = nowMs - count * bucketLen;
+    const since = new Date(sinceMs).toISOString();
+
+    const query = `
+        SELECT ${bucketExpr} as bucket,
+               COUNT(*) as count,
+               AVG(duration_ms) as avgDuration,
+               MIN(timestamp) as since,
+               MAX(timestamp) as until
+        FROM request_log
+        WHERE timestamp >= ?
+        GROUP BY bucket
+        ORDER BY bucket ASC
+    `;
+
+    reqDb.all(query, [since], (err, rows) => {
+        if (err) {
+            console.error('Error querying request stats:', err.message);
+            return res.status(500).send('Database error.');
+        }
+
+        const buckets = [];
+        const totalStats = rows.reduce((acc, row) => {
+            acc.count += row.count;
+            acc.totalDuration += row.avgDuration * row.count;
+            return acc;
+        }, { count: 0, totalDuration: 0 });
+
+        rows.forEach(row => {
+            buckets.push({
+                label: formatLabel(row.bucket),
+                count: row.count,
+                avgDuration: Math.round(row.avgDuration || 0),
+                since: row.since,
+                until: row.until
+            });
+        });
+
+        const totalRequests = totalStats.count;
+        const avgDuration = totalStats.count > 0 ? Math.round(totalStats.totalDuration / totalStats.count) : 0;
+
+        res.render("partials/statsContent", {
+            buckets: JSON.stringify(buckets),
+            resolution,
+            count,
+            totalRequests,
+            avgDuration,
+            layout: false
+        });
+    });
+})
+
 app.get("/concordances", (req, res) => {
     const concordancesPath = path.join(__dirname, "public", "concordances");
     fs.readdir(concordancesPath, (err, files) => {

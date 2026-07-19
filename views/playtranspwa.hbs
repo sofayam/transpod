@@ -32,9 +32,20 @@
             border-radius: 10px;
             color: #333;
             font-family: sans-serif;
+            font-size: 14px;
             line-height: 1.6;
             max-height: 80vh;
             overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+            .modal-content {
+                font-size: 12px;
+                padding: 12px;
+                width: 95%;
+                margin: 2% auto;
+            }
+            .modal-content h1 { font-size: 1.2em; }
+            .modal-content h3 { font-size: 1em; }
         }
         .close {
             color: #aaa;
@@ -80,6 +91,18 @@
         }
         /* Notes Modal Styles */
         #notes-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+        }
+        /* Reports Modal Styles */
+        #reports-modal {
             display: none;
             position: fixed;
             z-index: 2000;
@@ -236,6 +259,14 @@
         </div>
     </div>
 
+    <!-- Reports Modal -->
+    <div id="reports-modal">
+        <div class="modal-content">
+            <span id="reports-close" class="notes-close">&times;</span>
+            <div id="reports-content">Loading...</div>
+        </div>
+    </div>
+
     <div id="back-to-search-container" style="display: none; padding: 10px;">
         <a href="#" onclick="history.back(); return false;" style="text-decoration: none; font-size: 1.2em;">&larr; Back to Search</a>
     </div>
@@ -262,6 +293,21 @@
             <button id="playpause">▶</button>
             <button id="finished">✅</button>
             <button id="notes-btn"{{#unless hasNotes}} style="opacity: 0.5;"{{/unless}}>{{#if hasNotes}}📝{{else}}📄{{/if}}</button>
+            <button id="reports-btn" style="cursor: pointer;">📊</button>
+        
+            </div>
+
+    </div>
+
+    <!-- Reports Chooser Modal -->
+    <div id="reports-chooser-modal" style="display: none; position: fixed; z-index: 2001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 8px; padding: 8px 0; min-width: 180px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+            <a href="#" class="chooser-item" data-report="recentPublish" style="display: block; padding: 10px 20px; text-decoration: none; color: #333;">Recently Published</a>
+            <a href="#" class="chooser-item" data-report="recentListen" style="display: block; padding: 10px 20px; text-decoration: none; color: #333;">Recent Listening</a>
+            <a href="#" class="chooser-item" data-report="chart" style="display: block; padding: 10px 20px; text-decoration: none; color: #333;">Chart</a>
+            <a href="#" class="chooser-item" data-report="stats" style="display: block; padding: 10px 20px; text-decoration: none; color: #333;">Stats</a>
+        </div>
+    </div>
         
             </div>
   
@@ -1216,6 +1262,99 @@ audio.addEventListener("progress", () => {
             })
             .catch(error => console.error("Fetch error:", error));
     }
+
+    // Reports chooser modal and content modal
+    const reportsBtn = document.getElementById('reports-btn');
+    const chooserModal = document.getElementById('reports-chooser-modal');
+    const reportsModal = document.getElementById('reports-modal');
+    const reportsClose = document.getElementById('reports-close');
+    const reportsContent = document.getElementById('reports-content');
+    let chartJsLoaded = false;
+
+    reportsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chooserModal.style.display = 'block';
+    });
+
+    chooserModal.addEventListener('click', (e) => {
+        if (e.target === chooserModal) {
+            chooserModal.style.display = 'none';
+        }
+    });
+
+    document.querySelectorAll('.chooser-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const report = item.dataset.report;
+            chooserModal.style.display = 'none';
+            loadReportContent(report);
+        });
+    });
+
+    window.loadReportContent = function(report, lang, resolution, count) {
+        reportsModal.style.display = 'block';
+        reportsContent.innerHTML = 'Loading...';
+
+        let url;
+        switch (report) {
+            case 'recentPublish':
+                url = '/api/recentPublish';
+                break;
+            case 'recentListen':
+                url = '/api/recentListen';
+                break;
+            case 'chart':
+                url = '/api/chartFromDB?language=' + encodeURIComponent(lang || 'ja');
+                break;
+            case 'stats':
+                url = '/api/stats?resolution=' + encodeURIComponent(resolution || 'hours') + '&count=' + encodeURIComponent(count || '24');
+                break;
+            default:
+                reportsContent.innerHTML = '<p>Unknown report.</p>';
+                return;
+        }
+
+        const needsChartJs = (report === 'chart' || report === 'stats');
+
+        function fetchAndRender() {
+            fetch(url)
+                .then(r => r.text())
+                .then(html => {
+                    reportsContent.innerHTML = html;
+                    reportsContent.querySelectorAll('script').forEach(old => {
+                        const s = document.createElement('script');
+                        s.textContent = old.textContent;
+                        old.replaceWith(s);
+                    });
+                })
+                .catch(err => {
+                    console.error('Error loading report:', err);
+                    reportsContent.innerHTML = '<p>Error loading report.</p>';
+                });
+        }
+
+        if (needsChartJs && !chartJsLoaded) {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+            script.onload = () => {
+                chartJsLoaded = true;
+                fetchAndRender();
+            };
+            document.head.appendChild(script);
+        } else {
+            fetchAndRender();
+        }
+    };
+
+    reportsClose.addEventListener('click', () => {
+        reportsModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target == reportsModal) {
+            reportsModal.style.display = 'none';
+        }
+    });
 
 });
 

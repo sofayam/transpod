@@ -1,0 +1,14 @@
+<h1>Recently Published</h1>
+<ul>
+{{#each epList}}
+    <li>
+        {{this.info.published}} <a href="/play/{{this.pod}}/{{this.encoded}}">  {{this.pod}}: {{this.name}} 
+        [{{ this.transcriptionMethod}}] 
+        {{#if finished}}
+            ✅
+        {{else}}
+            🔴
+        {{/if}}</a>
+    </li>
+{{/each}}
+</ul>

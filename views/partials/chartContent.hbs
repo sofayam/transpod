@@ -1,0 +1,117 @@
+<h1>Podcast Listening Tracker</h1>
+
+<div class="stats">
+    <div class="stat-box">
+        <div class="stat-value" id="totalMinutes">{{tottime}}</div>
+        <div class="stat-label">Total Time</div>
+    </div>
+</div>
+
+<div style="text-align:right; margin-bottom:10px;">
+    <label for="language">Language:</label>
+    <select id="language" onchange="_chartLoadLang(this.value)">
+        <option value="all" {{#if (eq selectedLanguage "all")}}selected{{/if}}>All</option>
+        {{#each languages}}
+        <option value="{{this.language}}" {{#if (eq this.language ../selectedLanguage)}}selected{{/if}}>{{this.language}}</option>
+        {{/each}}
+    </select>
+    <label for="rangeSelect">Show: </label>
+    <select id="rangeSelect" name="range">
+        <option value="30" selected>Last 30</option>
+        <option value="100">Last 100</option>
+        <option value="all">All</option>
+    </select>
+</div>
+
+<div class="chart-container" style="position: relative; height: 400px;">
+    <canvas id="podcastChart"></canvas>
+</div>
+
+<script>
+(function() {
+    const podcastData = {{{listenList}}};
+    const selectedLanguage = '{{selectedLanguage}}';
+    let chartInstance = null;
+
+    function getTruncatedData(range) {
+        if (range === "all") return podcastData;
+        const n = parseInt(range, 10);
+        return podcastData.slice(-n);
+    }
+
+    function renderChart(range = "30") {
+        const dataToShow = getTruncatedData(range);
+        const ctx = document.getElementById('podcastChart').getContext('2d');
+        
+        const labels = dataToShow.map(item => item.date);
+        
+        let datasets;
+        if (selectedLanguage === 'all') {
+            const languages = [...new Set(dataToShow.flatMap(d => Object.keys(d.languages)))];
+            const languageColors = {};
+            languages.forEach((lang, index) => {
+                languageColors[lang] = `hsl(${(index * 36) % 360}, 70%, 50%)`;
+            });
+
+            datasets = languages.map(lang => ({
+                label: lang,
+                data: dataToShow.map(d => d.languages[lang] || 0),
+                backgroundColor: languageColors[lang],
+            }));
+        } else {
+            datasets = [{
+                label: 'Total Minutes',
+                data: dataToShow.map(item => item.totalMinutes),
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }];
+        }
+
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+        
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        title: {
+                            display: true,
+                            text: 'Total Minutes'
+                        },
+                        min: 0
+                    }
+                }
+            }
+        });
+    }
+
+    const rangeSelect = document.getElementById('rangeSelect');
+    renderChart(rangeSelect.value);
+    rangeSelect.addEventListener('change', function() {
+        renderChart(this.value);
+    });
+
+    window._chartLoadLang = function(lang) {
+        if (typeof window.loadReportContent === 'function') {
+            window.loadReportContent('chart', lang);
+        }
+    };
+})();
+</script>
